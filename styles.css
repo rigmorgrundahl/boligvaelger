@@ -1,0 +1,40 @@
+
+:root{
+  --bg:#fffaf3;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --red:#ef4444;
+  --card:#ffffff;
+  --shadow: 0 10px 25px rgba(0,0,0,0.08);
+  --radius: 16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+#map{height:calc(100% - 64px);}
+.topbar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:500}
+.topbar h1{font-size:18px;margin:0}
+.legend{display:flex;align-items:center;gap:16px;font-size:14px;color:var(--muted)}
+.legend .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.ledig{background:var(--green)}
+.reserveret{background:var(--amber)}
+.udlejet{background:var(--red)}
+
+/* Leaflet tweaks */
+.leaflet-container{background:var(--bg)}
+.poly-LEDIG{fill:var(--green);fill-opacity:0.35;stroke:var(--green);stroke-width:2}
+.poly-RESERVERET{fill:var(--amber);fill-opacity:0.35;stroke:var(--amber);stroke-width:2}
+.poly-UDLEJET{fill:var(--red);fill-opacity:0.28;stroke:var(--red);stroke-width:2}
+.poly-HOVER{filter:contrast(1.1);stroke-width:3}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;padding:20px}
+.modal[aria-hidden="false"]{display:flex}
+.modal-content{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);max-width:520px;width:100%;padding:20px;position:relative}
+.close{border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;position:absolute;right:10px;top:6px;color:#111}
+.modal h2{margin-top:0;margin-bottom:6px}
+.modal .meta{color:var(--muted);font-size:14px;margin-bottom:12px}
+.modal .cta{display:flex;gap:10px;margin-top:16px}
+.modal .cta a{flex:1;text-align:center;text-decoration:none;background:#111;color:#fff;padding:12px;border-radius:12px}
+.modal .cta a.secondary{background:#f4f4f5;color:#111}
