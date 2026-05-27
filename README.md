@@ -1,50 +1,35 @@
-# Boligvælger – Leaflet (image overlay)
+# The Clean Machine
 
-Denne lille pakke giver dig en klikbar boligvælger oven på et statisk situationskort (PNG/SVG).
-Den kan lægges på enhver side (WordPress, Webflow, custom) ved at uploade filerne til et underkatalog og indsætte en *iframe*.
+A mobile-first, single-screen cleaning guide for people who find tidying overwhelming because they don't have a system. No accounts. No ads. The app tells you what to do next.
 
-## Hurtigt i gang
-1) Åbn `index.html` lokalt i din browser (dobbeltklik).
-2) Du kan panorere/zoome og klikke på de 3 demo-boliger.
-3) Redigér `data/units.json` for at styre farver/status/links.
-4) Erstat `assets/plan.png` med et rent situationskort. Nu: 1398×908px.
+## Run it
 
-## Dataformat (`data/units.json`)
-Hver bolig er et polygon:
-```json
-{
-  "id": "B1",
-  "label": "1",
-  "status": "LEDIG|RESERVERET|UDLEJET",
-  "rooms": 4,
-  "size": 98,
-  "desc": "valgfrit",
-  "more_url": "https://...",
-  "cta_url": "https://...",
-  "coords": [[y,x], [y,x], ...]   // billed-pixelkoordinater (0,0 = øverste venstre)
-}
-```
-> Tip: Brug et værktøj som **Maplat**, **geojson.io** (med image overlay) eller et simpelt koordinat-script til at klikke hjørnerne af hver bolig.
+Open `index.html` in any modern browser. No build step, no server required — it loads React 18 from a CDN and runs from there. Drop the file on any web host or open it locally with a double-click.
 
-Du kan også starte med rektangler og finjustere senere.
+## Modes
 
-## Indlejring på velkomn.dk
-- Upload hele mappen til dit webhotel (fx `/boligvaelger/lysholm/`).
-- Indsæt på en side via *Custom HTML* blok:
+| Mode | Time | Layout |
+| --- | --- | --- |
+| ⚡ The Quickie | 30 min | Full-screen one-task-per-screen with countdown timer and slide-to-start |
+| 🌿 Standard | ~1.5 hrs | Checklist with room tags |
+| 💜 Thorough | ~2.5 hrs | Checklist, every corner attended |
+| 🌹 Deep Clean | ~4 hrs | Checklist, every detail incl. oven, windows, baseboards |
 
-```html
-<iframe src="/boligvaelger/lysholm/index.html" style="width:100%;height:80vh;border:0;border-radius:12px;overflow:hidden"></iframe>
-```
+## Files
 
-## Farver og status
-- `LEDIG` = grøn, `RESERVERET` = gul, `UDLEJET` = rød (kan tilpasses i `styles.css`).
-- Tooltip viser label + status. Klik åbner modal med flere detaljer og CTA.
+- `index.html` — self-contained app (React from CDN, all CSS and JS inline). This is the runnable artifact.
+- `CleanMachine.jsx` — the same component as a JSX source reference. Drop into a Vite/Next project to use as a normal React component.
 
-## Videreudvikling (nemt)
-- Knyt data til Google Sheet eller Airtable → byg et lille endpoint der returnerer samme JSON.
-- Tilføj filtrering (værelser, m², pris) og en sidepanel-liste.
-- Track klik/visninger i GA4 (event på polygon-click).
-- Tilgængelighed: tab-fokus på polygoner + tast-luk af modal (ESC).
+## Design
 
-## Licenser
-Leaflet 1.9.4 (BSD-2). Alt andet MIT.
+- Dark theme, warm off-white text
+- Bricolage Grotesque (headings) + Karla (body) from Google Fonts
+- One accent colour per mode
+- 480px max width, optimised for phone use
+
+## Roadmap to a native app
+
+The HTML version is the prototype. To ship as a real mobile app:
+
+1. Wrap `index.html` in **Capacitor** (`npx cap init`, copy the file into `www/`, build to iOS and Android). Fastest path; the existing code works unchanged.
+2. Or port `CleanMachine.jsx` to **React Native** via Expo. The state and data structure carry over; the SVG illustrations need swapping to `react-native-svg`, and the slide-to-start gesture needs `react-native-gesture-handler`.

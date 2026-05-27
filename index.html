@@ -1,32 +1,856 @@
 <!doctype html>
-<html lang="da">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Boligvælger • Demo</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="./styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0E0E0C" />
+  <title>The Clean Machine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0E0E0C;
+      --fg: #E8E4DC;
+      --muted: rgba(232, 228, 220, 0.6);
+      --line: rgba(232, 228, 220, 0.12);
+      --quickie: #D4A24E;
+      --standard: #5B9E8F;
+      --thorough: #7E8BBE;
+      --deep: #B56B8A;
+      --danger: #E0584A;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Karla", system-ui, -apple-system, sans-serif;
+      font-weight: 500;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 {
+      font-family: "Bricolage Grotesque", system-ui, sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0;
+      line-height: 1.05;
+    }
+    button {
+      font-family: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    #root {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      position: relative;
+    }
+
+    .screen {
+      padding: 24px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-height: 100dvh;
+    }
+
+    /* ---- Mode picker ---- */
+    .mode-picker .hero { padding: 24px 4px 0; }
+    .mode-picker h1 { font-size: 44px; }
+    .mode-picker p { color: var(--muted); margin-top: 12px; font-size: 16px; line-height: 1.4; }
+    .mode-list { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+    .mode-card {
+      text-align: left;
+      border: 1.5px solid var(--line);
+      border-left-width: 4px;
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: transform 0.15s ease, background 0.15s ease;
+      position: relative;
+    }
+    .mode-card:active { transform: scale(0.985); background: rgba(255,255,255,0.04); }
+    .mode-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .mode-label { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 24px; }
+    .mode-duration { color: var(--muted); font-size: 14px; font-weight: 600; }
+    .mode-blurb { color: var(--muted); font-size: 15px; }
+    .mode-arrow { position: absolute; right: 18px; bottom: 14px; font-size: 22px; }
+    .picker-foot { color: var(--muted); font-size: 13px; text-align: center; margin-top: auto; padding-top: 24px; }
+
+    /* ---- Quickie launch ---- */
+    .quickie-launch { justify-content: space-between; align-items: stretch; }
+    .back { color: var(--muted); font-size: 14px; align-self: flex-start; padding: 6px 0; }
+    .launch-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; flex: 1; justify-content: center; }
+    .launch-emoji { font-size: 88px; line-height: 1; }
+    .launch-body h2 { font-size: 30px; max-width: 320px; }
+    .launch-time { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 56px; letter-spacing: -0.03em; }
+    .launch-foot { color: var(--muted); font-size: 13px; }
+
+    .slide-track {
+      position: relative;
+      width: 100%;
+      height: 64px;
+      border-radius: 32px;
+      border: 1.5px solid;
+      background: rgba(255,255,255,0.04);
+      overflow: hidden;
+      user-select: none;
+      touch-action: pan-y;
+    }
+    .slide-fill {
+      position: absolute; inset: 0 auto 0 0; height: 100%; opacity: 0.25;
+      transition: width 0.05s linear;
+    }
+    .slide-hint {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-weight: 600; font-size: 15px; pointer-events: none;
+      letter-spacing: 0.05em;
+    }
+    .slide-thumb {
+      position: absolute; left: 4px; top: 4px; width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--bg); font-size: 24px; font-weight: 800;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+
+    /* ---- Progress ---- */
+    .progress { display: flex; gap: 4px; flex: 1; }
+    .progress .seg { flex: 1; height: 4px; border-radius: 2px; background: rgba(232,228,220,0.18); transition: background 0.25s ease; }
+
+    /* ---- Timer chip ---- */
+    .timer-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 14px;
+      border: 1.5px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.03);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      font-size: 14px;
+      min-height: 36px;
+    }
+    .timer-chip.expired { border-color: var(--danger); color: var(--danger); }
+    .timer-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--quickie); }
+    .timer-chip.paused .timer-dot { background: var(--muted); }
+    .timer-chip.expired .timer-dot { background: var(--danger); }
+    .timer-chip.running .timer-dot { animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ---- Quickie step (no scroll) ---- */
+    .quickie-step { height: 100dvh; padding-top: 18px; gap: 14px; }
+    .quickie-top { display: flex; align-items: center; gap: 14px; }
+    .quickie-card {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      gap: 14px;
+      padding: 8px 6px 0;
+    }
+    .big-emoji { font-size: 72px; line-height: 1; }
+    .bonus-tag {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      border: 1px solid; border-radius: 999px; padding: 4px 10px;
+    }
+    .step-title { font-size: 32px; margin-top: 2px; }
+    .step-body { color: var(--fg); opacity: 0.88; font-size: 16px; line-height: 1.5; max-width: 340px; }
+
+    .tip-pill {
+      align-self: center;
+      border: 1.5px solid;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      max-width: 340px;
+      text-align: left;
+      line-height: 1.45;
+      background: rgba(255,255,255,0.02);
+    }
+    .tip-pill .tip-body { color: var(--fg); font-weight: 500; opacity: 0.9; }
+
+    /* ---- Checklist step ---- */
+    .checklist-step { gap: 18px; }
+    .checklist-top { display: flex; flex-direction: column; gap: 8px; }
+    .bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(232,228,220,0.18); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+    .step-counter { color: var(--muted); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+
+    .checklist-card { display: flex; flex-direction: column; gap: 14px; }
+    .room-tag {
+      align-self: flex-start;
+      border: 1px solid; border-radius: 999px; padding: 4px 10px;
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .checklist-card .step-title { font-size: 28px; text-align: left; max-width: none; }
+
+    .task-list { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 12px; }
+    .task-list li { display: flex; align-items: flex-start; gap: 12px; }
+    .checkbox {
+      width: 26px; height: 26px; border: 1.5px solid; border-radius: 7px;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+      color: var(--bg); font-weight: 800; font-size: 14px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .checkbox:active { transform: scale(0.9); }
+    .task { font-size: 16px; line-height: 1.4; padding-top: 2px; }
+    .task.done { color: var(--muted); text-decoration: line-through; }
+
+    .tip-box {
+      border: 1.5px solid; border-radius: 12px; padding: 12px 14px;
+      font-size: 14px; line-height: 1.5;
+      background: rgba(255,255,255,0.02);
+      margin-top: 6px;
+    }
+
+    /* ---- Buttons ---- */
+    .primary-btn {
+      margin-top: auto;
+      width: 100%;
+      min-height: 56px;
+      border-radius: 14px;
+      color: var(--bg);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      transition: transform 0.12s ease, filter 0.15s ease;
+    }
+    .primary-btn:active { transform: scale(0.985); filter: brightness(1.05); }
+
+    /* ---- Done screen ---- */
+    .done-screen { align-items: center; justify-content: center; text-align: center; gap: 18px; }
+    .done-emoji { font-size: 88px; }
+    .done-screen h2 { font-size: 48px; }
+    .done-screen p { color: var(--muted); font-size: 16px; max-width: 320px; line-height: 1.5; }
+    .done-screen .primary-btn { margin-top: 24px; max-width: 320px; }
+
+    /* ---- Animations ---- */
+    .fade-up { animation: fadeUp 0.3s ease-out both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-height: 680px) {
+      .big-emoji { font-size: 56px; }
+      .step-title { font-size: 26px; }
+      .step-body { font-size: 15px; }
+      .launch-emoji { font-size: 64px; }
+      .launch-time { font-size: 44px; }
+    }
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <h1>Lysholm Have – Boligvælger (demo)</h1>
-    <div class="legend">
-      <span class="dot ledig"></span> Ledig
-      <span class="dot reserveret"></span> Reserveret
-      <span class="dot udlejet"></span> Udlejet
-    </div>
-  </header>
-  <div id="map"></div>
+  <div id="root"></div>
 
-  <!-- Modal -->
-  <div id="modal" class="modal" aria-hidden="true">
-    <div class="modal-content">
-      <button class="close" id="closeModal" aria-label="Luk">×</button>
-      <div id="modalBody"></div>
-    </div>
-  </div>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="./script.js"></script>
+  <script>
+    (function () {
+      var h = React.createElement;
+      var useState = React.useState;
+      var useEffect = React.useEffect;
+      var useRef = React.useRef;
+      var useCallback = React.useCallback;
+
+      // ---------- Data ----------
+      var MODES = {
+        quickie: {
+          label: "The Quickie",
+          duration: "30 min",
+          blurb: "speed run, the essentials",
+          color: "#D4A24E",
+          layout: "card",
+          timerSeconds: 30 * 60,
+          steps: [
+            { emoji: "🗑️", title: "Trash First",
+              body: "Grab a bag. Empty all bins, collect any bottles and cans for pant. Tie it up by the front door.",
+              tip: "Check the bathroom bin — always the forgotten one.",
+              illustration: "trash" },
+            { emoji: "🧺", title: "Tidy Up",
+              body: "Everything back where it lives. Bedside items in drawers, pillows back in their spots, shoes by the door, remotes on the table, chargers tucked away. Refill water bottles and toss any expired food from the fridge.",
+              tip: "Clothes lying around? Fold them away or hide them in the dryer — no judgement.",
+              illustration: "tidy" },
+            { emoji: "🧽", title: "Wipe Down",
+              body: "Wet cloth with a bit of soap. All surfaces — tables, counters, windowsills. Then go over everything with a dry tea towel for a clean finish. Start kitchen, end bathroom.",
+              tip: "Don't forget mirrors, light switches, and door handles.",
+              illustration: "wipe" },
+            { emoji: "🚽", title: "Toilet & Shower",
+              body: "Squirt cleaner in the bowl. Clear any hair from the shower cabin. Let the cleaner sit while you move on. Toss all used cloths and tea towels in the washing machine — you're done with them.",
+              tip: "A dry wipe after makes the bathroom look 10x better.",
+              illustration: "droplet" },
+            { emoji: "🌀", title: "Quick Vacuum",
+              body: "Every room, but fast. Don't move furniture — just hit all the floors, carpets, and rugs you can see. Get the corners if they look dusty.",
+              tip: "Speed over perfection. If it looks clean from standing height, you're good.",
+              illustration: "swirl" },
+            { emoji: "🛏️", title: "Make the Bed",
+              body: "Straighten the duvet, fluff the pillows. Two minutes — changes the whole room.",
+              tip: "Pull the duvet tight from the far side first, then smooth toward you.",
+              illustration: "bed" },
+            { emoji: "🕯️", title: "Finishing Touch",
+              body: "Light a candle if you're feeling cute.",
+              tip: "Bonus round — not a requirement.",
+              illustration: "candle", bonus: true }
+          ]
+        },
+
+        standard: {
+          label: "Standard", duration: "~1.5 hrs", blurb: "solid all-around clean",
+          color: "#5B9E8F", layout: "checklist",
+          steps: [
+            { title: "Strip the Beds", room: "Bedrooms",
+              tasks: ["Remove all bedding", "Gather towels from the bathroom", "Start the wash at 60°C with Vanish"],
+              tip: "Start here so the laundry runs in the background while you clean." },
+            { title: "Declutter & Trash", room: "Entire apartment",
+              tasks: ["Remove visible clutter", "Throw out all rubbish", "Collect bottles and cans for pant", "Everything back to its spot"] },
+            { title: "Restock the Fridge", room: "Kitchen",
+              tasks: ["Refill water bottles", "Toss perishables that are past it", "Canned food stays"] },
+            { title: "Wipe All Surfaces", room: "Bedrooms → Living → Kitchen → Bathroom",
+              tasks: ["Bucket of warm water + Ajax", "Wipe every surface in order", "Dry with a tea towel", "Glass cleaner on mirrors"],
+              tip: "Don't forget mirrors, radiators, and tops of nightstands." },
+            { title: "Clean the Bathroom", room: "Bathroom",
+              tasks: ["Fresh cloth, toilet cleaner in the bowl", "Sponge the sink and toilet exterior", "Scrub the toilet thoroughly", "Dry-wipe everything to a shine"],
+              tip: "Throw the bathroom cloth straight in the wash when you're done." },
+            { title: "Vacuum", room: "Entire apartment",
+              tasks: ["All floors and carpets", "Corners and edges"] },
+            { title: "Mop Floors", room: "Bedrooms → Living → Kitchen → Bathroom",
+              tasks: ["Warm water + wood floor treatment", "Mop in the same room order", "Kitchen and bathroom last"] },
+            { title: "Make Beds & Laundry", room: "Bedrooms",
+              tasks: ["Transfer laundry to the dryer", "Put on fresh sheets", "Make beds neatly"] },
+            { title: "Final Walkthrough", room: "Entire apartment",
+              tasks: ["Trash out via the chute", "Final lap — eyes open", "Lock up"],
+              tip: "Imagine you're the guest checking in." }
+          ]
+        },
+
+        thorough: {
+          label: "Thorough", duration: "~2.5 hrs", blurb: "everything gets attention",
+          color: "#7E8BBE", layout: "checklist",
+          steps: [
+            { title: "Strip the Beds", room: "Bedrooms",
+              tasks: ["Remove all bedding", "Strip the mattress protectors too", "Gather towels from the bathroom", "Start the wash at 60°C with Vanish"],
+              tip: "Mattress protectors only get washed when you bother — today you bother." },
+            { title: "Declutter & Check Drawers", room: "Entire apartment",
+              tasks: ["Remove visible clutter", "Throw out all rubbish", "Collect bottles and cans for pant", "Open drawers and cabinets — pull out anything forgotten", "Everything back to its spot"] },
+            { title: "Fridge Reset", room: "Kitchen",
+              tasks: ["Refill water bottles", "Toss perishables that are past it", "Wipe down fridge shelves", "Canned food stays"] },
+            { title: "Surfaces & Appliances", room: "Bedrooms → Living → Kitchen → Bathroom",
+              tasks: ["Bucket of warm water + Ajax", "Wipe every surface in order", "Full appliance wipe: microwave, kettle, hood, hob", "Dry with a tea towel", "Glass cleaner on mirrors"],
+              tip: "Don't skip the radiator tops, the top of the fridge, or behind the kettle." },
+            { title: "Deep Bathroom", room: "Bathroom",
+              tasks: ["Fresh cloth, toilet cleaner in the bowl", "Sponge the sink and toilet exterior", "Scrub the toilet thoroughly", "Scrub the tile grout with a brush", "Dry-wipe everything to a shine"],
+              tip: "A grout brush makes the tiles look new again." },
+            { title: "Detailed Vacuum", room: "Entire apartment",
+              tasks: ["All floors, carpets, and rugs", "Switch to the nozzle for baseboards", "Corners, edges, and behind doors"] },
+            { title: "Mop Floors", room: "Bedrooms → Living → Kitchen → Bathroom",
+              tasks: ["Warm water + wood floor treatment", "Mop in the same room order", "Kitchen and bathroom last"] },
+            { title: "Hotel-Style Beds & Laundry", room: "Bedrooms",
+              tasks: ["Transfer laundry to the dryer", "Mattress protectors back on", "Fresh sheets, tucked tight at the corners", "Pillows fluffed and aligned"],
+              tip: "Tuck the bottom sheet hospital-style — corners at 45°." },
+            { title: "Final Walkthrough", room: "Entire apartment",
+              tasks: ["Trash out via the chute", "Final lap — eyes open", "Lock up"],
+              tip: "Imagine you're the guest checking in." }
+          ]
+        },
+
+        deep: {
+          label: "Deep Clean", duration: "~4 hrs", blurb: "every corner, every detail",
+          color: "#B56B8A", layout: "checklist",
+          steps: [
+            { title: "Strip the Beds", room: "Bedrooms",
+              tasks: ["Remove all bedding", "Strip the mattress protectors too", "Gather towels from the bathroom", "Start the wash at 60°C with Vanish"],
+              tip: "Get this running first — it'll be done by the time you finish." },
+            { title: "Declutter & Check Everything", room: "Entire apartment",
+              tasks: ["Remove visible clutter", "Throw out all rubbish", "Collect bottles and cans for pant", "Open every drawer and cabinet — pull out anything forgotten", "Everything back where it lives"] },
+            { title: "Oven & Kitchen Appliances", room: "Kitchen",
+              tasks: ["Oven cleaner on the inside, leave to sit", "Wipe down the hob, kettle, microwave, hood", "Wipe cabinet fronts", "Come back and scrub the oven"],
+              tip: "Spray the oven first — it needs 20 minutes to do its job." },
+            { title: "Fridge Reset", room: "Kitchen",
+              tasks: ["Refill water bottles", "Toss perishables that are past it", "Wipe down fridge shelves and drawers", "Canned food stays"] },
+            { title: "Surfaces & Details", room: "Bedrooms → Living → Kitchen → Bathroom",
+              tasks: ["Bucket of warm water + Ajax", "Wipe every surface in order", "Door frame tops, skirting boards, lampshade tops", "Dust the lampshades", "Glass cleaner on mirrors"],
+              tip: "Run a finger along the top of a door frame. That's why we're here." },
+            { title: "Deep Bathroom", room: "Bathroom",
+              tasks: ["Fresh cloth, toilet cleaner in the bowl", "Sponge the sink and toilet exterior", "Scrub the toilet thoroughly", "Scrub the tile grout with a brush", "Descale the shower head", "Dry-wipe everything to a shine"] },
+            { title: "Detailed Vacuum", room: "Entire apartment",
+              tasks: ["All floors, carpets, and rugs", "Nozzle for baseboards and corners", "Under the sofa and under the bed", "Upholstery brush on couch cushions"] },
+            { title: "Mop Floors", room: "Bedrooms → Living → Kitchen → Bathroom",
+              tasks: ["Warm water + wood floor treatment", "Mop in the same room order", "Kitchen and bathroom last"] },
+            { title: "Windows & Details", room: "Entire apartment",
+              tasks: ["Window glass — inside, all rooms", "Wipe down blinds", "Dust light bulbs and fixtures", "Wipe down remotes and switches"],
+              tip: "The details are what people notice without knowing why." },
+            { title: "Hotel Beds & Walkthrough", room: "Entire apartment",
+              tasks: ["Transfer laundry to the dryer", "Mattress protectors back on", "Fresh sheets, hotel corners", "Pillows fluffed", "Trash out via the chute", "Final lap and lock up"] }
+          ]
+        }
+      };
+
+      var MODE_ORDER = ["quickie", "standard", "thorough", "deep"];
+
+      function fmtTime(s) {
+        if (s < 0) s = 0;
+        var m = Math.floor(s / 60), r = s % 60;
+        return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
+      }
+
+      // ---------- Animated SVG illustrations (Quickie) ----------
+      function Illustration(props) {
+        var kind = props.kind, color = props.color;
+        var commonAttrs = { width: 140, height: 90, viewBox: "0 0 140 90", fill: "none" };
+
+        if (kind === "trash") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, strokeLinecap: "round" },
+              h("path", { d: "M55 35 L55 75 Q55 80 60 80 L80 80 Q85 80 85 75 L85 35 Z" }),
+              h("path", { d: "M50 35 L90 35" }),
+              h("path", { d: "M65 30 L75 30" }),
+              h("line", { x1: 63, y1: 45, x2: 63, y2: 70, opacity: 0.5 }),
+              h("line", { x1: 70, y1: 45, x2: 70, y2: 70, opacity: 0.5 }),
+              h("line", { x1: 77, y1: 45, x2: 77, y2: 70, opacity: 0.5 }),
+              h("g", { opacity: 0.7 },
+                h("circle", { cx: 58, cy: 22, r: 1.5 },
+                  h("animate", { attributeName: "cy", values: "22;10;22", dur: "2.2s", repeatCount: "indefinite" }),
+                  h("animate", { attributeName: "opacity", values: "0.7;0;0.7", dur: "2.2s", repeatCount: "indefinite" })
+                ),
+                h("circle", { cx: 70, cy: 20, r: 1.5 },
+                  h("animate", { attributeName: "cy", values: "20;6;20", dur: "2.6s", repeatCount: "indefinite", begin: "0.4s" }),
+                  h("animate", { attributeName: "opacity", values: "0.7;0;0.7", dur: "2.6s", repeatCount: "indefinite", begin: "0.4s" })
+                ),
+                h("circle", { cx: 82, cy: 22, r: 1.5 },
+                  h("animate", { attributeName: "cy", values: "22;10;22", dur: "2.4s", repeatCount: "indefinite", begin: "0.8s" }),
+                  h("animate", { attributeName: "opacity", values: "0.7;0;0.7", dur: "2.4s", repeatCount: "indefinite", begin: "0.8s" })
+                )
+              )
+            )
+          );
+        }
+
+        if (kind === "tidy") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none" },
+              h("line", { x1: 20, y1: 65, x2: 120, y2: 65, opacity: 0.4 }),
+              h("rect", { x: 40, y: 48, width: 16, height: 16, rx: 2 },
+                h("animate", { attributeName: "x", values: "20;40;40;40;20", keyTimes: "0;0.25;0.5;0.75;1", dur: "3.6s", repeatCount: "indefinite" })
+              ),
+              h("rect", { x: 62, y: 48, width: 16, height: 16, rx: 2 },
+                h("animate", { attributeName: "x", values: "100;62;62;62;100", keyTimes: "0;0.25;0.5;0.75;1", dur: "3.6s", repeatCount: "indefinite" })
+              ),
+              h("rect", { x: 84, y: 48, width: 16, height: 16, rx: 2 },
+                h("animate", { attributeName: "x", values: "120;84;84;84;120", keyTimes: "0;0.3;0.5;0.75;1", dur: "3.6s", repeatCount: "indefinite", begin: "0.3s" })
+              )
+            )
+          );
+        }
+
+        if (kind === "wipe") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("line", { x1: 20, y1: 70, x2: 120, y2: 70, opacity: 0.4 }),
+              h("rect", { x: 58, y: 42, width: 24, height: 16, rx: 3, fill: color, fillOpacity: 0.15 },
+                h("animate", { attributeName: "x", values: "30;90;30", dur: "2.4s", repeatCount: "indefinite" })
+              ),
+              h("path", { d: "M35 60 Q40 56 45 60", opacity: 0.5 },
+                h("animate", { attributeName: "d", values: "M35 60 Q40 56 45 60;M85 60 Q90 56 95 60;M35 60 Q40 56 45 60", dur: "2.4s", repeatCount: "indefinite" })
+              )
+            )
+          );
+        }
+
+        if (kind === "droplet") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none" },
+              h("path", { d: "M50 68 Q50 78 60 78 L80 78 Q90 78 90 68 L88 50 L52 50 Z" }),
+              h("ellipse", { cx: 70, cy: 72, rx: 14, ry: 3, opacity: 0.5 }),
+              h("path", { d: "M70 20 Q66 28 66 32 Q66 36 70 36 Q74 36 74 32 Q74 28 70 20Z", fill: color, stroke: "none" },
+                h("animateTransform", { attributeName: "transform", type: "translate", values: "0 0; 0 28; 0 0", keyTimes: "0;0.6;1", dur: "2.2s", repeatCount: "indefinite" }),
+                h("animate", { attributeName: "opacity", values: "1;1;0;1", keyTimes: "0;0.55;0.65;1", dur: "2.2s", repeatCount: "indefinite" })
+              )
+            )
+          );
+        }
+
+        if (kind === "swirl") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("g", { transform: "translate(70 45)" },
+                h("path", { d: "M0 0 m -22 0 a 22 22 0 1 0 44 0 a 18 18 0 1 1 -36 0 a 14 14 0 1 0 28 0 a 10 10 0 1 1 -20 0" },
+                  h("animateTransform", { attributeName: "transform", type: "rotate", from: "0", to: "360", dur: "3.6s", repeatCount: "indefinite" })
+                )
+              )
+            )
+          );
+        }
+
+        if (kind === "bed") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 22, y: 50, width: 96, height: 22, rx: 3 }),
+              h("line", { x1: 22, y1: 58, x2: 118, y2: 58, opacity: 0.4 }),
+              h("rect", { x: 28, y: 42, width: 22, height: 10, rx: 2, fill: color, fillOpacity: 0.2 }),
+              h("path", { d: "M55 64 Q70 60 85 64 T115 64", opacity: 0.6 },
+                h("animate", { attributeName: "d", values: "M55 68 Q70 62 85 68 T115 68;M55 64 Q70 64 85 64 T115 64;M55 68 Q70 62 85 68 T115 68", dur: "3s", repeatCount: "indefinite" })
+              )
+            )
+          );
+        }
+
+        if (kind === "candle") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 60, y: 42, width: 20, height: 34, rx: 2 }),
+              h("line", { x1: 70, y1: 42, x2: 70, y2: 36 }),
+              h("path", { d: "M70 36 Q63 28 70 18 Q77 28 70 36Z", fill: color, fillOpacity: 0.55, stroke: "none" },
+                h("animateTransform", { attributeName: "transform", type: "scale", additive: "sum", values: "1 1; 0.92 1.08; 1 1; 1.05 0.95; 1 1", keyTimes: "0;0.25;0.5;0.75;1", dur: "1.4s", repeatCount: "indefinite" }),
+                h("animate", { attributeName: "fill-opacity", values: "0.55;0.75;0.55;0.65;0.55", dur: "1.4s", repeatCount: "indefinite" })
+              )
+            )
+          );
+        }
+
+        return null;
+      }
+
+      // ---------- Slide-to-start ----------
+      function SlideToStart(props) {
+        var color = props.color, onComplete = props.onComplete;
+        var trackRef = useRef(null);
+        var thumbState = useState(0);
+        var thumbX = thumbState[0], setThumbX = thumbState[1];
+        var dragState = useState(false);
+        var dragging = dragState[0], setDragging = dragState[1];
+        var stateRef = useRef({ startX: 0, startThumb: 0, maxX: 0, fired: false });
+
+        var begin = useCallback(function (clientX) {
+          if (!trackRef.current) return;
+          var rect = trackRef.current.getBoundingClientRect();
+          var thumbW = 56, pad = 4;
+          var maxX = Math.max(0, rect.width - thumbW - pad * 2);
+          stateRef.current = { startX: clientX, startThumb: thumbX, maxX: maxX, fired: false };
+          setDragging(true);
+        }, [thumbX]);
+
+        var move = useCallback(function (clientX) {
+          var s = stateRef.current;
+          if (s.fired) return;
+          var delta = clientX - s.startX;
+          var nx = s.startThumb + delta;
+          if (nx < 0) nx = 0;
+          if (nx > s.maxX) nx = s.maxX;
+          setThumbX(nx);
+        }, []);
+
+        var end = useCallback(function () {
+          var s = stateRef.current;
+          setDragging(false);
+          if (thumbX >= s.maxX * 0.85 && !s.fired) {
+            s.fired = true;
+            setThumbX(s.maxX);
+            setTimeout(function () { onComplete(); }, 160);
+          } else {
+            setThumbX(0);
+          }
+        }, [thumbX, onComplete]);
+
+        useEffect(function () {
+          if (!dragging) return;
+          function onMM(e) { move(e.clientX); }
+          function onMU() { end(); }
+          function onTM(e) { if (e.touches[0]) move(e.touches[0].clientX); }
+          function onTE() { end(); }
+          window.addEventListener("mousemove", onMM);
+          window.addEventListener("mouseup", onMU);
+          window.addEventListener("touchmove", onTM, { passive: true });
+          window.addEventListener("touchend", onTE);
+          return function () {
+            window.removeEventListener("mousemove", onMM);
+            window.removeEventListener("mouseup", onMU);
+            window.removeEventListener("touchmove", onTM);
+            window.removeEventListener("touchend", onTE);
+          };
+        }, [dragging, move, end]);
+
+        var maxX = stateRef.current.maxX;
+        var pct = maxX ? thumbX / maxX : 0;
+
+        return h("div", { className: "slide-track", ref: trackRef, style: { borderColor: color } },
+          h("div", { className: "slide-fill", style: { width: (pct * 100) + "%", background: color } }),
+          h("div", { className: "slide-hint", style: { opacity: 1 - pct } }, "Slide to start →"),
+          h("div", {
+            className: "slide-thumb",
+            style: {
+              transform: "translateX(" + thumbX + "px)",
+              transition: dragging ? "none" : "transform 0.3s ease",
+              background: color
+            },
+            onMouseDown: function (e) { e.preventDefault(); begin(e.clientX); },
+            onTouchStart: function (e) { if (e.touches[0]) begin(e.touches[0].clientX); }
+          }, h("span", null, "→"))
+        );
+      }
+
+      // ---------- Mode picker ----------
+      function ModePicker(props) {
+        return h("div", { className: "screen mode-picker fade-up" },
+          h("header", { className: "hero" },
+            h("h1", null, "The Clean Machine"),
+            h("p", null, "Pick your pace. The app tells you what to do next — no thinking required.")
+          ),
+          h("div", { className: "mode-list" },
+            MODE_ORDER.map(function (id) {
+              var m = MODES[id];
+              return h("button", {
+                key: id, className: "mode-card",
+                style: { borderColor: m.color },
+                onClick: function () { props.onSelect(id); }
+              },
+                h("div", { className: "mode-card-top" },
+                  h("span", { className: "mode-label", style: { color: m.color } }, m.label),
+                  h("span", { className: "mode-duration" }, m.duration)
+                ),
+                h("span", { className: "mode-blurb" }, m.blurb),
+                h("span", { className: "mode-arrow", style: { color: m.color } }, "→")
+              );
+            })
+          ),
+          h("footer", { className: "picker-foot" }, "No accounts. No ads. Just clean.")
+        );
+      }
+
+      // ---------- Quickie Launch ----------
+      function QuickieLaunch(props) {
+        return h("div", { className: "screen quickie-launch fade-up" },
+          h("button", { className: "back", onClick: props.onBack }, "← Back"),
+          h("div", { className: "launch-body" },
+            h("div", { className: "launch-emoji" }, "⚡"),
+            h("h2", null, "7 steps. 30 minutes. ", h("span", { style: { color: props.color } }, "You got this.")),
+            h("div", { className: "launch-time", style: { color: props.color } }, "30:00"),
+            h(SlideToStart, { color: props.color, onComplete: props.onStart }),
+            h("p", { className: "launch-foot" }, "Drag the thumb across to begin.")
+          )
+        );
+      }
+
+      function TimerChip(props) {
+        var expired = props.secondsLeft <= 0;
+        var cls = "timer-chip" + (expired ? " expired" : "") + (props.running ? " running" : " paused");
+        return h("button", { className: cls, onClick: props.onToggle, "aria-label": props.running ? "Pause timer" : "Resume timer" },
+          h("span", { className: "timer-dot" }),
+          h("span", { className: "timer-text" }, fmtTime(props.secondsLeft))
+        );
+      }
+
+      function ProgressBar(props) {
+        var total = props.total, index = props.index, color = props.color;
+        var segs = [];
+        for (var i = 0; i < total; i++) {
+          segs.push(h("span", {
+            key: i,
+            className: "seg" + (i <= index ? " on" : ""),
+            style: i <= index ? { background: color } : undefined
+          }));
+        }
+        return h("div", { className: "progress" }, segs);
+      }
+
+      function QuickieStep(props) {
+        var step = props.step, total = props.total, color = props.color;
+        var isLast = props.stepIndex === total - 1;
+        return h("div", { className: "screen quickie-step" },
+          h("div", { className: "quickie-top" },
+            h(ProgressBar, { total: total, index: props.stepIndex, color: color }),
+            h(TimerChip, { secondsLeft: props.secondsLeft, running: props.timerRunning, onToggle: props.onToggleTimer })
+          ),
+          h("div", { key: props.animKey, className: "quickie-card fade-up" },
+            h("div", { className: "big-emoji", "aria-hidden": "true" }, step.emoji),
+            h(Illustration, { kind: step.illustration, color: color }),
+            step.bonus ? h("span", { className: "bonus-tag", style: { borderColor: color, color: color } }, "bonus round") : null,
+            h("h2", { className: "step-title" }, step.title),
+            h("p", { className: "step-body" }, step.body),
+            h("button", {
+              className: "tip-pill" + (props.expandedTip ? " open" : ""),
+              onClick: props.onToggleTip,
+              style: { borderColor: color }
+            },
+              h("span", { style: { color: color } }, "💡 Tip"),
+              props.expandedTip ? h("span", { className: "tip-body" }, " — " + step.tip) : null
+            )
+          ),
+          h("button", { className: "primary-btn", style: { background: color }, onClick: props.onNext },
+            isLast ? "Finish ✓" : "Done →"
+          )
+        );
+      }
+
+      function ChecklistStep(props) {
+        var step = props.step, total = props.total, color = props.color;
+        var isLast = props.stepIndex === total - 1;
+        var pct = (props.stepIndex / total) * 100;
+        return h("div", { className: "screen checklist-step" },
+          h("div", { className: "checklist-top" },
+            h("div", { className: "bar" }, h("div", { className: "bar-fill", style: { width: pct + "%", background: color } })),
+            h("div", { className: "step-counter" }, "Step " + (props.stepIndex + 1) + " of " + total)
+          ),
+          h("div", { key: props.animKey, className: "checklist-card fade-up" },
+            h("span", { className: "room-tag", style: { borderColor: color, color: color } }, step.room),
+            h("h2", { className: "step-title" }, step.title),
+            h("ul", { className: "task-list" },
+              step.tasks.map(function (t, i) {
+                var on = props.checked.has(i);
+                return h("li", { key: i },
+                  h("button", {
+                    className: "checkbox" + (on ? " on" : ""),
+                    style: on ? { background: color, borderColor: color } : { borderColor: color },
+                    onClick: function () { props.onToggleCheck(i); },
+                    "aria-label": on ? "Uncheck" : "Check"
+                  }, on ? h("span", null, "✓") : null),
+                  h("span", { className: "task" + (on ? " done" : "") }, t)
+                );
+              })
+            ),
+            step.tip ? h("div", { className: "tip-box", style: { borderColor: color } },
+              h("span", { style: { color: color } }, "💡 "), step.tip
+            ) : null
+          ),
+          h("button", { className: "primary-btn", style: { background: color }, onClick: props.onNext },
+            isLast ? "Finish ✓" : "Next step →"
+          )
+        );
+      }
+
+      function DoneScreen(props) {
+        return h("div", { className: "screen done-screen fade-up" },
+          h("div", { className: "done-emoji" }, "✨"),
+          h("h2", null, "Done."),
+          h("p", null, "You ran ", h("span", { style: { color: props.mode.color } }, props.mode.label),
+            " from start to finish. Enjoy the place."),
+          h("button", { className: "primary-btn", style: { background: props.mode.color }, onClick: props.onRestart }, "Start over")
+        );
+      }
+
+      // ---------- App ----------
+      function App() {
+        var modeS = useState(null);          var mode = modeS[0], setMode = modeS[1];
+        var phaseS = useState("running");    var phase = phaseS[0], setPhase = phaseS[1];
+        var stepS = useState(0);             var stepIndex = stepS[0], setStepIndex = stepS[1];
+        var checksS = useState({});          var checks = checksS[0], setChecks = checksS[1];
+        var tipS = useState(false);          var expandedTip = tipS[0], setExpandedTip = tipS[1];
+        var secS = useState(30 * 60);        var secondsLeft = secS[0], setSecondsLeft = secS[1];
+        var runS = useState(false);          var timerRunning = runS[0], setTimerRunning = runS[1];
+        var animS = useState(0);             var animKey = animS[0], setAnimKey = animS[1];
+
+        useEffect(function () {
+          if (!timerRunning) return;
+          if (secondsLeft <= 0) return;
+          var id = setInterval(function () { setSecondsLeft(function (s) { return s - 1; }); }, 1000);
+          return function () { clearInterval(id); };
+        }, [timerRunning, secondsLeft]);
+
+        var current = mode ? MODES[mode] : null;
+
+        function selectMode(id) {
+          setMode(id);
+          setStepIndex(0);
+          setChecks({});
+          setExpandedTip(false);
+          setAnimKey(function (k) { return k + 1; });
+          if (id === "quickie") {
+            setPhase("launch");
+            setSecondsLeft(MODES.quickie.timerSeconds);
+            setTimerRunning(false);
+          } else {
+            setPhase("running");
+          }
+        }
+
+        function reset() {
+          setMode(null);
+          setPhase("running");
+          setStepIndex(0);
+          setChecks({});
+          setExpandedTip(false);
+          setTimerRunning(false);
+          setSecondsLeft(30 * 60);
+        }
+
+        function startQuickie() {
+          setPhase("running");
+          setStepIndex(0);
+          setTimerRunning(true);
+          setAnimKey(function (k) { return k + 1; });
+        }
+
+        function next() {
+          if (!current) return;
+          setExpandedTip(false);
+          setAnimKey(function (k) { return k + 1; });
+          if (stepIndex + 1 >= current.steps.length) {
+            setPhase("done");
+            setTimerRunning(false);
+          } else {
+            setStepIndex(stepIndex + 1);
+          }
+        }
+
+        function toggleCheck(taskIdx) {
+          setChecks(function (prev) {
+            var set = new Set(prev[stepIndex] || []);
+            if (set.has(taskIdx)) set.delete(taskIdx);
+            else set.add(taskIdx);
+            var nx = {};
+            for (var k in prev) nx[k] = prev[k];
+            nx[stepIndex] = set;
+            return nx;
+          });
+        }
+
+        if (!mode) return h(ModePicker, { onSelect: selectMode });
+
+        if (mode === "quickie" && phase === "launch") {
+          return h(QuickieLaunch, { color: current.color, onStart: startQuickie, onBack: reset });
+        }
+
+        if (phase === "done") {
+          return h(DoneScreen, { mode: current, onRestart: reset });
+        }
+
+        var step = current.steps[stepIndex];
+        var total = current.steps.length;
+
+        if (current.layout === "card") {
+          return h(QuickieStep, {
+            step: step, stepIndex: stepIndex, total: total, color: current.color, animKey: animKey,
+            expandedTip: expandedTip, onToggleTip: function () { setExpandedTip(function (v) { return !v; }); },
+            secondsLeft: secondsLeft, timerRunning: timerRunning,
+            onToggleTimer: function () { setTimerRunning(function (v) { return !v; }); },
+            onNext: next
+          });
+        }
+
+        return h(ChecklistStep, {
+          step: step, stepIndex: stepIndex, total: total, color: current.color, animKey: animKey,
+          checked: checks[stepIndex] || new Set(),
+          onToggleCheck: toggleCheck,
+          onNext: next
+        });
+      }
+
+      var root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(h(App));
+    })();
+  </script>
 </body>
 </html>
