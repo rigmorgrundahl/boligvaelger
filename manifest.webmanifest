@@ -1,0 +1,26 @@
+{
+  "name": "The Clean Machine",
+  "short_name": "Clean Machine",
+  "description": "Mobile-first cleaning guide. Pick a mode and it tells you exactly what to do next.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E0E0C",
+  "theme_color": "#0E0E0C",
+  "categories": ["lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='42' fill='%23D4A24E'/><path d='M110 34L74 102h24l-12 56 42-72h-26z' fill='%230E0E0C'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='112' fill='%23D4A24E'/><path d='M294 90L196 274h66l-32 148 112-192h-72z' fill='%230E0E0C'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,32 +1,2069 @@
 <!doctype html>
-<html lang="da">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Boligvælger • Demo</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="./styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0E0E0C" />
+  <title>The Clean Machine</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Clean Machine" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'&gt;&lt;rect width='180' height='180' rx='40' fill='%23D4A24E'/&gt;&lt;path d='M104 32L70 96h22l-10 52 38-66H98z' fill='%230E0E0C'/&gt;&lt;/svg&gt;" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0E0E0C;
+      --fg: #E8E4DC;
+      --muted: rgba(232, 228, 220, 0.6);
+      --line: rgba(232, 228, 220, 0.12);
+      --soft: rgba(232, 228, 220, 0.06);
+      --quickie: #D4A24E;
+      --standard: #5B9E8F;
+      --thorough: #7E8BBE;
+      --deep: #B56B8A;
+      --danger: #E0584A;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Karla", system-ui, -apple-system, sans-serif;
+      font-weight: 500;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 {
+      font-family: "Bricolage Grotesque", system-ui, sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0;
+      line-height: 1.05;
+    }
+    button {
+      font-family: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    input, select, textarea {
+      font-family: inherit;
+      color: inherit;
+      background: transparent;
+      border: none;
+      outline: none;
+    }
+    #root {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      position: relative;
+    }
+
+    .screen {
+      padding: 24px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-height: 100dvh;
+    }
+
+    /* ---- Mode picker ---- */
+    .mode-picker .hero { padding: 24px 4px 0; }
+    .mode-picker h1 { font-size: 44px; }
+    .mode-picker .sub { color: var(--muted); margin-top: 12px; font-size: 16px; line-height: 1.4; }
+    .top-row { display: flex; justify-content: space-between; align-items: center; }
+    .gear-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: var(--muted);
+      border: 1.5px solid var(--line);
+      background: var(--soft);
+    }
+    .mode-list { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+    .mode-card {
+      text-align: left;
+      border: 1.5px solid var(--line);
+      border-left-width: 4px;
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      background: var(--soft);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: transform 0.15s ease, background 0.15s ease;
+      position: relative;
+    }
+    .mode-card:active { transform: scale(0.985); background: rgba(255,255,255,0.04); }
+    .mode-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .mode-label { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 24px; }
+    .mode-duration { color: var(--muted); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .mode-blurb { color: var(--muted); font-size: 15px; }
+    .mode-arrow { position: absolute; right: 18px; bottom: 14px; font-size: 22px; }
+    .picker-foot { color: var(--muted); font-size: 13px; text-align: center; margin-top: auto; padding-top: 24px; }
+
+    /* ---- Setup flow ---- */
+    .setup { gap: 18px; }
+    .setup-progress { display: flex; gap: 4px; }
+    .setup-progress .seg { flex: 1; height: 3px; border-radius: 2px; background: var(--line); transition: background 0.3s ease; }
+    .setup-progress .seg.on { background: var(--fg); opacity: 0.65; }
+    .setup-step { display: flex; flex-direction: column; gap: 16px; flex: 1; }
+    .setup-step h2 { font-size: 32px; }
+    .setup-step .lede { color: var(--muted); font-size: 15px; line-height: 1.45; }
+    .setup-foot {
+      display: flex; gap: 12px; align-items: center; margin-top: auto;
+    }
+    .setup-back { color: var(--muted); font-size: 14px; padding: 10px 4px; }
+    .setup-next {
+      flex: 1; min-height: 52px; border-radius: 14px;
+      background: var(--fg); color: var(--bg);
+      font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 17px;
+    }
+    .setup-skip { color: var(--muted); font-size: 14px; padding: 10px 4px; }
+
+    .big-card-grid { display: flex; flex-direction: column; gap: 10px; }
+    .big-card {
+      text-align: left;
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      padding: 16px 16px 14px;
+      background: var(--soft);
+      display: flex; flex-direction: column; gap: 4px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .big-card.selected { border-color: var(--fg); background: rgba(255,255,255,0.06); }
+    .big-card-emoji { font-size: 28px; }
+    .big-card-title { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 20px; }
+    .big-card-blurb { color: var(--muted); font-size: 14px; line-height: 1.4; }
+
+    .stepper {
+      display: flex; align-items: center; justify-content: space-between;
+      border: 1.5px solid var(--line); border-radius: 16px;
+      padding: 8px 8px; background: var(--soft);
+    }
+    .stepper button {
+      width: 48px; height: 48px; border-radius: 12px;
+      font-size: 28px; font-weight: 600;
+      background: rgba(255,255,255,0.05);
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .stepper button:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+    .stepper-value {
+      font-family: "Bricolage Grotesque", sans-serif; font-weight: 800;
+      font-size: 36px; min-width: 80px; text-align: center;
+    }
+
+    .slider-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .sqm-row { display: flex; align-items: baseline; justify-content: space-between; }
+    .sqm-value { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 44px; }
+    .sqm-unit { color: var(--muted); font-size: 14px; margin-left: 6px; }
+    .sqm-band {
+      border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px;
+      font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; background: var(--line); border-radius: 2px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--fg); cursor: pointer; border: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--fg); cursor: pointer; border: none;
+    }
+
+    .chip-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip {
+      border: 1.5px solid var(--line); border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px; font-weight: 600;
+      background: var(--soft);
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .chip.on { border-color: var(--fg); background: rgba(255,255,255,0.06); }
+    .chip-mark { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: var(--bg); font-weight: 800; }
+    .chip.on .chip-mark { background: var(--fg); border-color: var(--fg); }
+
+    .name-input {
+      width: 100%; font-size: 22px; font-family: "Bricolage Grotesque", sans-serif; font-weight: 800;
+      padding: 14px 16px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--soft);
+    }
+    .name-input:focus { border-color: var(--fg); }
+
+    /* ---- Settings screen ---- */
+    .settings { gap: 18px; }
+    .settings .header { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; }
+    .settings h2 { font-size: 28px; }
+    .settings .section { display: flex; flex-direction: column; gap: 10px; padding: 14px 0; border-top: 1px solid var(--line); }
+    .settings .section:first-of-type { border-top: none; padding-top: 4px; }
+    .section-label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .save-btn { margin-top: auto; }
+
+    /* ---- Launch screen ---- */
+    .launch { justify-content: space-between; align-items: stretch; gap: 14px; }
+    .back { color: var(--muted); font-size: 14px; align-self: flex-start; padding: 6px 0; }
+    .launch-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; flex: 1; justify-content: center; }
+    .launch-emoji { font-size: 80px; line-height: 1; }
+    .launch-body h2 { font-size: 28px; max-width: 320px; line-height: 1.1; }
+    .launch-body .pers { color: var(--muted); font-size: 14px; }
+    .launch-time { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 52px; letter-spacing: -0.03em; }
+    .launch-cap { color: var(--muted); font-size: 13px; max-width: 320px; line-height: 1.4; }
+    .launch-foot { color: var(--muted); font-size: 13px; }
+
+    .pre-warn {
+      border: 1.5px solid; border-radius: 12px;
+      padding: 10px 14px; font-size: 13px; line-height: 1.4;
+      text-align: left; background: var(--soft);
+      max-width: 340px;
+    }
+    .pre-warn-title { font-weight: 700; }
+    .pre-warn ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); }
+
+    .slide-track {
+      position: relative;
+      width: 100%;
+      height: 64px;
+      border-radius: 32px;
+      border: 1.5px solid;
+      background: var(--soft);
+      overflow: hidden;
+      user-select: none;
+      touch-action: pan-y;
+    }
+    .slide-fill {
+      position: absolute; inset: 0 auto 0 0; height: 100%; opacity: 0.25;
+      transition: width 0.05s linear;
+    }
+    .slide-hint {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-weight: 600; font-size: 15px; pointer-events: none;
+      letter-spacing: 0.05em;
+    }
+    .slide-thumb {
+      position: absolute; left: 4px; top: 4px; width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--bg); font-size: 24px; font-weight: 800;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+
+    /* ---- Task card (unified, used by all modes) ---- */
+    .task-card-screen { height: 100dvh; padding-top: 18px; gap: 14px; }
+    .task-top { display: flex; align-items: center; gap: 14px; }
+    .progress { display: flex; gap: 4px; flex: 1; }
+    .progress .seg { flex: 1; height: 4px; border-radius: 2px; background: rgba(232,228,220,0.18); transition: background 0.25s ease; }
+
+    .timer-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 14px;
+      border: 1.5px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      font-size: 14px;
+      min-height: 36px;
+    }
+    .timer-chip.expired { border-color: var(--danger); color: var(--danger); }
+    .timer-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fg); }
+    .timer-chip.paused .timer-dot { background: var(--muted); }
+    .timer-chip.expired .timer-dot { background: var(--danger); }
+    .timer-chip.running .timer-dot { animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .task-card {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      gap: 12px;
+      padding: 8px 6px 0;
+    }
+    .room-tag {
+      align-self: center;
+      border: 1px solid; border-radius: 999px; padding: 4px 12px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .big-emoji { font-size: 64px; line-height: 1; }
+    .bonus-tag {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      border: 1px solid; border-radius: 999px; padding: 4px 10px;
+    }
+    .step-title { font-size: 30px; margin-top: 2px; }
+    .step-body { color: var(--fg); opacity: 0.9; font-size: 15px; line-height: 1.5; max-width: 340px; }
+
+    .supply-warn {
+      border: 1.5px solid; border-radius: 12px;
+      padding: 8px 12px; font-size: 13px; line-height: 1.4;
+      max-width: 340px; text-align: left;
+      background: var(--soft);
+    }
+    .supply-warn-strong { font-weight: 700; }
+
+    .tip-pill {
+      align-self: center;
+      border: 1.5px solid;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      max-width: 340px;
+      text-align: left;
+      line-height: 1.45;
+      background: var(--soft);
+    }
+    .tip-pill .tip-body { color: var(--fg); font-weight: 500; opacity: 0.9; }
+
+    .primary-btn {
+      margin-top: auto;
+      width: 100%;
+      min-height: 56px;
+      border-radius: 14px;
+      color: var(--bg);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.35), 0 6px 16px rgba(0,0,0,0.25);
+      transform: translateY(0);
+      transition: transform 0.07s ease, box-shadow 0.07s ease, filter 0.15s ease;
+      position: relative;
+    }
+    .primary-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.35), 0 3px 8px rgba(0,0,0,0.25);
+      filter: brightness(1.05);
+    }
+    .secondary-btn {
+      width: 100%; min-height: 48px; border-radius: 12px;
+      border: 1.5px solid var(--line);
+      background: var(--soft);
+      font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 15px;
+    }
+
+    /* ---- Done screen ---- */
+    .done-screen { align-items: center; justify-content: center; text-align: center; gap: 18px; }
+    .done-emoji { font-size: 80px; }
+    .done-screen h2 { font-size: 44px; }
+    .done-screen p { color: var(--muted); font-size: 15px; max-width: 320px; line-height: 1.5; }
+    .done-stats {
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+      margin-top: 6px;
+    }
+    .stat-chip {
+      border: 1.5px solid var(--line); border-radius: 12px;
+      padding: 10px 14px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: var(--soft);
+      min-width: 84px;
+    }
+    .stat-value { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 22px; }
+    .stat-label { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    .done-screen .primary-btn { margin-top: 20px; max-width: 320px; }
+
+    /* ---- Animations ---- */
+    .fade-up { animation: fadeUp 0.3s ease-out both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .bounce-in { animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    @keyframes bounceIn {
+      0%   { opacity: 0; transform: scale(0.7) translateY(8px); }
+      60%  { opacity: 1; transform: scale(1.08) translateY(0); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ---- Streak chip ---- */
+    .streak-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 10px;
+      border: 1.5px solid rgba(255, 140, 60, 0.45);
+      border-radius: 999px;
+      background: rgba(255, 110, 40, 0.12);
+      font-weight: 800; font-size: 13px;
+      color: #FFB070;
+      font-variant-numeric: tabular-nums;
+    }
+    .streak-chip .flame { font-size: 14px; }
+    .streak-banner {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 16px;
+      border: 1.5px solid rgba(255, 140, 60, 0.5);
+      border-radius: 14px;
+      background: rgba(255, 110, 40, 0.12);
+      font-weight: 700; font-size: 14px;
+      color: #FFB070;
+    }
+
+    /* ---- Encouragement (mid-step microcopy) ---- */
+    .encouragement {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted);
+      animation: encourageIn 0.4s ease-out both;
+    }
+    @keyframes encourageIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---- XP float (rewards on Done tap) ---- */
+    .xp-float-host { position: relative; }
+    .xp-float {
+      position: absolute; left: 50%; bottom: 100%;
+      transform: translateX(-50%);
+      font-family: "Bricolage Grotesque", sans-serif; font-weight: 800;
+      font-size: 22px; color: #FFD370;
+      pointer-events: none;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+      animation: xpFloat 0.95s ease-out both;
+    }
+    @keyframes xpFloat {
+      0%   { opacity: 0; transform: translate(-50%, 8px); }
+      15%  { opacity: 1; transform: translate(-50%, -2px); }
+      100% { opacity: 0; transform: translate(-50%, -60px); }
+    }
+
+    /* ---- Confetti (milestone + done) ---- */
+    .confetti-host { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .confetti-piece {
+      position: absolute; top: -20px; width: 8px; height: 12px;
+      border-radius: 2px;
+      animation: confettiFall 1.6s ease-in both;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translateY(120vh) rotate(540deg); opacity: 0; }
+    }
+
+    /* ---- Bottom sheet (mid-clean timer menu) ---- */
+    .sheet-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      animation: fadeBg 0.18s ease-out both;
+      z-index: 50;
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    @keyframes fadeBg { from { opacity: 0; } to { opacity: 1; } }
+    .sheet {
+      width: 100%; max-width: 480px;
+      background: #1a1916; border-top-left-radius: 22px; border-top-right-radius: 22px;
+      padding: 18px 20px 28px;
+      display: flex; flex-direction: column; gap: 10px;
+      animation: sheetUp 0.22s ease-out both;
+    }
+    @keyframes sheetUp { from { transform: translateY(40px); opacity: 0.2; } to { transform: translateY(0); opacity: 1; } }
+    .sheet-title { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; padding-bottom: 4px; }
+    .sheet-btn {
+      width: 100%; min-height: 52px; border-radius: 12px;
+      border: 1.5px solid var(--line);
+      background: var(--soft);
+      font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 16px;
+      color: var(--fg);
+      transition: background 0.12s ease, transform 0.08s ease;
+    }
+    .sheet-btn:active { background: rgba(255,255,255,0.08); transform: scale(0.98); }
+    .sheet-btn.primary { color: var(--bg); border: none; }
+
+    .show-timer-link {
+      align-self: flex-end;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    @media (max-height: 720px) {
+      .big-emoji { font-size: 52px; }
+      .step-title { font-size: 25px; }
+      .step-body { font-size: 14px; }
+      .launch-emoji { font-size: 60px; }
+      .launch-time { font-size: 42px; }
+      .launch-body h2 { font-size: 24px; }
+      .task-card { gap: 10px; }
+    }
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <h1>Lysholm Have – Boligvælger (demo)</h1>
-    <div class="legend">
-      <span class="dot ledig"></span> Ledig
-      <span class="dot reserveret"></span> Reserveret
-      <span class="dot udlejet"></span> Udlejet
-    </div>
-  </header>
-  <div id="map"></div>
+  <div id="root"></div>
 
-  <!-- Modal -->
-  <div id="modal" class="modal" aria-hidden="true">
-    <div class="modal-content">
-      <button class="close" id="closeModal" aria-label="Luk">×</button>
-      <div id="modalBody"></div>
-    </div>
-  </div>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="./script.js"></script>
+  <script>
+    // Register service worker for PWA install + offline support
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./sw.js").catch(function () { /* ignore */ });
+      });
+    }
+  </script>
+
+  <script>
+    (function () {
+      var h = React.createElement;
+      var useState = React.useState;
+      var useEffect = React.useEffect;
+      var useRef = React.useRef;
+      var useCallback = React.useCallback;
+      var useMemo = React.useMemo;
+
+      // ============================================================
+      // SETTINGS PERSISTENCE
+      // ============================================================
+      var SETTINGS_KEY = "cm.settings.v1";
+
+      var DEFAULT_SETTINGS = {
+        dwelling: "flat",
+        bedrooms: 1,
+        bathrooms: 1,
+        sqm: 65,
+        extras: {
+          stairs: false, garden: false, garage: false,
+          balcony: false, mudroom: false, laundryRoom: false
+        },
+        profile: "friendly",
+        name: "",
+        supplies: {
+          allPurpose: true, vanish: true, toiletCleaner: true,
+          cloths: true, mop: true, vacuum: true
+        },
+        showTimer: true,
+        setupComplete: false,
+        runCount: 0,
+        lastCompletedAt: 0,
+        streakCurrent: 0,
+        streakBest: 0,
+        streakLastAt: 0,
+        totalXP: 0,
+        runHistory: []  // array of { mode, completedAt, minutes }, capped at 100
+      };
+
+      function loadSettings() {
+        try {
+          var raw = localStorage.getItem(SETTINGS_KEY);
+          if (!raw) return Object.assign({}, DEFAULT_SETTINGS);
+          var parsed = JSON.parse(raw);
+          // migrate old profile keys → new ones
+          var profileMap = { beginner: "guided", casual: "friendly", pro: "brief", teen: "playful", houseguest: "preGuests" };
+          if (profileMap[parsed.profile]) parsed.profile = profileMap[parsed.profile];
+          return Object.assign({}, DEFAULT_SETTINGS, parsed, {
+            extras: Object.assign({}, DEFAULT_SETTINGS.extras, parsed.extras || {}),
+            supplies: Object.assign({}, DEFAULT_SETTINGS.supplies, parsed.supplies || {})
+          });
+        } catch (e) {
+          return Object.assign({}, DEFAULT_SETTINGS);
+        }
+      }
+      function saveSettings(s) {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (e) {}
+      }
+
+      // ============================================================
+      // MODES
+      // ============================================================
+      var MODES = {
+        quickie:  { id: "quickie",  label: "The Quickie",       color: "#D4A24E", emoji: "⚡",
+                    blurb: "speed run, the essentials",
+                    base: 30,  cap: 60,  roomBonus: 2,  bathBonus: 3,  mood: "energetic" },
+        deepDive: { id: "deepDive", label: "The Deep Dive",     color: "#7E8BBE", emoji: "💜",
+                    blurb: "everything that matters",
+                    base: 120, cap: 240, roomBonus: 10, bathBonus: 12, mood: "focused" },
+        shebang:  { id: "shebang",  label: "The Whole Shebang", color: "#B56B8A", emoji: "🌹",
+                    blurb: "every corner, every detail",
+                    base: 240, cap: 360, roomBonus: 18, bathBonus: 22, mood: "long-mix" }
+      };
+      var MODE_ORDER = ["quickie", "deepDive", "shebang"];
+
+      // ============================================================
+      // STEPS (unified library)
+      // body: { quickie?, standard?, thorough?, deep? } — text per mode
+      // tasks not required; body is the rendered text
+      // visibleIn: which modes show this step
+      // requires: supply keys
+      // requiresExtra: name of an extras flag that must be true (gates the step)
+      // skipForHouseguest: hide in Houseguest profile
+      // ============================================================
+      var STEPS = [
+        {
+          id: "trash-first",
+          emoji: "🗑️", illustration: "trash", room: "Kitchen + Bathroom",
+          title: "Trash First",
+          body: { quickie: "Grab a bag. Empty every bin. Collect any bottles and cans for pant. Tie it up by the front door." },
+          tip: "The bathroom bin is always the forgotten one.",
+          visibleIn: ["quickie"]
+        },
+        {
+          id: "strip-beds",
+          emoji: "🛏️", illustration: "bed", room: "Bedrooms",
+          title: "Strip the Beds",
+          body: {
+            deepDive: "Strip bedding AND mattress protectors. Gather all towels. Start the wash at 60°C with Vanish — runs while you clean.",
+            shebang:  "Strip bedding AND mattress protectors. Gather all towels. Start the wash at 60°C with Vanish — it needs to be done by the time you finish."
+          },
+          tip: "Get this running first so the laundry's ready when you are.",
+          requires: ["vanish"],
+          visibleIn: ["deepDive", "shebang"],
+          skipFor: function (s) { return s.bedrooms === 0; }
+        },
+        {
+          id: "tidy-up",
+          emoji: "🧺", illustration: "tidy", room: "Whole place",
+          title: "Tidy Up",
+          body: { quickie: "Everything back where it lives. Bedside stuff in drawers, pillows in their spots, shoes by the door, remotes on the table, chargers tucked away. Refill water bottles." },
+          tip: "Clothes lying around? Fold them away or hide them in the dryer — no judgement.",
+          visibleIn: ["quickie"]
+        },
+        {
+          id: "declutter-trash",
+          emoji: "🧹", illustration: "tidy", room: "Whole place",
+          title: "Declutter & Trash",
+          body: {
+            deepDive: "Visible clutter out. Rubbish bagged. Pant collected. Then open drawers and cabinets — pull out anything that's drifted in there.",
+            shebang:  "Visible clutter out. Rubbish bagged. Pant collected. Open every drawer and cabinet — pull out anything forgotten. Everything back where it lives."
+          },
+          tip: "If it's been sitting out for a week, it doesn't live there.",
+          visibleIn: ["deepDive", "shebang"]
+        },
+        {
+          id: "fridge-reset",
+          emoji: "🧊", illustration: "fridge", room: "Kitchen",
+          title: "Restock the Fridge",
+          body: {
+            deepDive: "Refill water bottles. Toss anything past it. Wipe down the fridge shelves. Canned food stays.",
+            shebang:  "Refill water bottles. Toss anything past it. Wipe down every shelf AND the drawers. Canned food stays."
+          },
+          tip: "If it's smelling, it's not staying.",
+          requires: ["cloths"],
+          visibleIn: ["deepDive", "shebang"]
+        },
+        {
+          id: "oven-appliances",
+          emoji: "🔥", illustration: "oven", room: "Kitchen",
+          title: "Oven & Appliances",
+          body: { shebang: "Spray oven cleaner inside, leave it to sit 20 minutes. While it works: wipe the hob, kettle, microwave, hood. Wipe cabinet fronts. Come back and scrub the oven." },
+          tip: "Hit the oven first — it needs the time.",
+          requires: ["allPurpose", "cloths"],
+          visibleIn: ["shebang"]
+        },
+        {
+          id: "wipe-surfaces",
+          emoji: "🧽", illustration: "wipe", room: "All rooms",
+          title: "Wipe Surfaces",
+          body: {
+            quickie:  "Wet cloth with a bit of soap. All surfaces — tables, counters, windowsills. Then a dry tea towel pass. Start kitchen, end bathroom.",
+            deepDive: "Bucket + Ajax. Every surface, room by room. Full appliance wipe: microwave, kettle, hood, hob. Tea towel dry. Glass cleaner on mirrors.",
+            shebang:  "Bucket + Ajax. Every surface in order. Then door frame tops, skirting boards, lampshade tops. Dust the lampshades. Glass cleaner on mirrors."
+          },
+          tip: "Mirrors, light switches, door handles. The ones that get touched daily.",
+          requires: ["allPurpose", "cloths"],
+          visibleIn: ["quickie", "deepDive", "shebang"]
+        },
+        {
+          id: "bathroom",
+          emoji: "🚽", illustration: "droplet", room: "Bathroom",
+          title: "Toilet & Shower",
+          body: {
+            quickie:  "Squirt cleaner in the bowl. Clear any hair from the shower. Let the cleaner sit. Toss all used cloths and tea towels in the wash.",
+            deepDive: "Toilet cleaner in the bowl. Sponge sink + toilet exterior. Scrub the bowl thoroughly. Scrub the tile grout. Dry-wipe to a shine.",
+            shebang:  "Toilet cleaner in the bowl. Sponge sink + toilet exterior. Scrub the bowl. Scrub the grout. Descale the shower head. Dry-wipe to a shine."
+          },
+          tip: "A dry wipe at the end makes the bathroom look 10x better.",
+          requires: ["toiletCleaner", "cloths"],
+          visibleIn: ["quickie", "deepDive", "shebang"]
+        },
+        {
+          id: "stairs",
+          emoji: "🪜", illustration: "stairs", room: "Stairs",
+          title: "Stairs Vacuum",
+          body: {
+            quickie:  "Hoover the stairs top to bottom. Don't skip the edges where dust gathers.",
+            deepDive: "Hoover the stairs top to bottom. Switch to the nozzle for the edges and the riser corners.",
+            shebang:  "Hoover the stairs top to bottom. Nozzle on the edges and corners. Wipe the banister with a damp cloth."
+          },
+          tip: "Top to bottom — dust falls down, work with it.",
+          requires: ["vacuum"],
+          requiresExtra: "stairs",
+          visibleIn: ["quickie", "deepDive", "shebang"]
+        },
+        {
+          id: "vacuum",
+          emoji: "🌀", illustration: "swirl", room: "All rooms",
+          title: "Vacuum",
+          body: {
+            quickie:  "Every room, fast. Don't move furniture. Hit every floor, carpet, and rug you can see.",
+            deepDive: "All floors, carpets, rugs. Switch to the nozzle for baseboards. Corners, edges, behind doors.",
+            shebang:  "All floors, carpets, rugs. Nozzle on baseboards and corners. Under the sofa, under the bed. Upholstery brush on the couch cushions."
+          },
+          tip: "Speed over perfection. If it looks clean from standing height, you're good.",
+          requires: ["vacuum"],
+          visibleIn: ["quickie", "deepDive", "shebang"]
+        },
+        {
+          id: "mudroom",
+          emoji: "🥾", illustration: "mudroom", room: "Mudroom",
+          title: "Mudroom Reset",
+          body: {
+            deepDive: "Boots lined up. Coats on hooks. Sweep AND mop. Wipe the bench.",
+            shebang:  "Boots lined up. Coats on hooks. Sweep, mop, wipe the bench. Knock down any cobwebs in the corners."
+          },
+          tip: "Anything not currently in use goes in the cupboard.",
+          requiresExtra: "mudroom",
+          visibleIn: ["deepDive", "shebang"]
+        },
+        {
+          id: "mop-floors",
+          emoji: "💧", illustration: "mop", room: "Hard floors",
+          title: "Mop Floors",
+          body: {
+            deepDive: "Warm water + wood floor treatment. Bedrooms → living → kitchen → bathroom. Kitchen and bathroom last. Get the corners.",
+            shebang:  "Warm water + wood floor treatment. Two passes on the high-traffic floors. Kitchen and bathroom last."
+          },
+          tip: "Always finish with the room nearest the door so you don't walk on wet floors.",
+          requires: ["mop"],
+          visibleIn: ["deepDive", "shebang"]
+        },
+        {
+          id: "windows-details",
+          emoji: "🪟", illustration: "windows", room: "Whole place",
+          title: "Windows & Details",
+          body: { shebang: "Window glass on the inside, every room. Wipe down the blinds. Dust light bulbs and fixtures. Wipe the remotes and the light switches." },
+          tip: "The details are what people notice without knowing why.",
+          requires: ["cloths"],
+          visibleIn: ["shebang"]
+        },
+        {
+          id: "garden",
+          emoji: "🍃", illustration: "garden", room: "Outdoors",
+          title: "Garden / Terrace",
+          body: {
+            deepDive: "Sweep the terrace. Wipe down outdoor furniture. Clear pots and plant trays of debris.",
+            shebang:  "Sweep terrace. Wipe outdoor furniture. Tidy pots and trays. Hose down the surface if it's grimy."
+          },
+          tip: "Outdoor dust travels indoors. Worth doing.",
+          requiresExtra: "garden",
+          visibleIn: ["deepDive", "shebang"]
+        },
+        {
+          id: "garage",
+          emoji: "🚗", illustration: "garage", room: "Garage",
+          title: "Garage Sweep",
+          body: {
+            deepDive: "Sweep the garage floor. Knock down cobwebs. Anything that doesn't belong here goes.",
+            shebang:  "Sweep the garage floor end to end. Knock down cobwebs in the corners. Bin anything that doesn't live here."
+          },
+          tip: "Cobwebs love garage corners. Look up.",
+          requiresExtra: "garage",
+          visibleIn: ["deepDive", "shebang"]
+        },
+        {
+          id: "balcony",
+          emoji: "🌿", illustration: "balcony", room: "Balcony",
+          title: "Balcony",
+          body: {
+            quickie:  "Quick sweep. Wipe the railing.",
+            deepDive: "Sweep. Wipe railing. Wipe down outdoor furniture and any plant trays.",
+            shebang:  "Sweep. Wipe railing. Outdoor furniture wiped. Plant trays sorted. Hose the surface if needed."
+          },
+          tip: "Easy win. Five minutes max in The Quickie.",
+          requiresExtra: "balcony",
+          visibleIn: ["quickie", "deepDive", "shebang"]
+        },
+        {
+          id: "laundry-room",
+          emoji: "🧺", illustration: "appliances", room: "Laundry room",
+          title: "Laundry Room",
+          body: {
+            deepDive: "Wipe the washer, dryer, and surrounding shelves. Empty the lint trap. Sweep and mop.",
+            shebang:  "Wipe the washer, dryer, shelves. Empty the lint trap. Sweep, mop, knock down cobwebs."
+          },
+          tip: "The lint trap. Always.",
+          requiresExtra: "laundryRoom",
+          visibleIn: ["deepDive", "shebang"]
+        },
+        {
+          id: "make-bed-quickie",
+          emoji: "🛏️", illustration: "bed", room: "Bedroom",
+          title: "Make the Bed",
+          body: { quickie: "Straighten the duvet, fluff the pillows. Two minutes — changes the whole room." },
+          tip: "Pull the duvet tight from the far side first, then smooth toward you.",
+          visibleIn: ["quickie"]
+        },
+        {
+          id: "make-beds-laundry",
+          emoji: "🛏️", illustration: "bed", room: "Bedrooms",
+          title: "Beds & Laundry",
+          body: {
+            deepDive: "Wash → dryer. Mattress protectors back on. Fresh sheets, tucked tight at the corners. Pillows fluffed and aligned.",
+            shebang:  "Wash → dryer. Mattress protectors back on. Fresh sheets with hospital corners. Pillows fluffed."
+          },
+          tip: "Tuck the bottom sheet hospital-style — corners at 45°.",
+          visibleIn: ["deepDive", "shebang"]
+        },
+        {
+          id: "finishing-touch",
+          emoji: "🕯️", illustration: "candle", room: "Living room",
+          title: "Finishing Touch",
+          body: { quickie: "Light a candle if you're feeling cute." },
+          tip: "Bonus round — not a requirement.",
+          bonus: true,
+          visibleIn: ["quickie"]
+        },
+        {
+          id: "walkthrough",
+          emoji: "🏁", illustration: "walkthrough", room: "Whole place",
+          title: "Final Walkthrough",
+          body: {
+            deepDive: "Trash out. Final lap — look at every room like a guest would. Lock up.",
+            shebang:  "Trash out. Final lap. Walk through every room like a guest checking in. Lock up."
+          },
+          tip: "Imagine you're the guest checking in.",
+          visibleIn: ["deepDive", "shebang"]
+        }
+      ];
+
+      // ============================================================
+      // ENGINE
+      // ============================================================
+      function sizeBand(sqm) {
+        if (sqm <= 50) return "S";
+        if (sqm <= 110) return "M";
+        return "L";
+      }
+
+      function estimateMinutes(modeId, s) {
+        var m = MODES[modeId];
+        var sqmFactor = 1 + 0.6 * (s.sqm - 60) / 60;
+        var minutes = m.base * Math.max(0.6, Math.min(2.5, sqmFactor));
+        minutes += Math.max(0, s.bedrooms - 1) * m.roomBonus;
+        minutes += Math.max(0, s.bathrooms - 1) * m.bathBonus;
+        // extras
+        var extrasBonusBase = (modeId === "quickie") ? 4 : (modeId === "deepDive") ? 10 : 15;
+        ["stairs", "garden", "garage", "balcony", "mudroom", "laundryRoom"].forEach(function (k) {
+          if (s.extras[k]) minutes += extrasBonusBase;
+        });
+        // house surcharge
+        if (s.dwelling === "house") minutes *= 1.1;
+        else if (s.dwelling === "townhouse") minutes *= 1.05;
+        // clamp + round to 5
+        minutes = Math.min(m.cap, Math.max(m.base * 0.6, minutes));
+        return Math.round(minutes / 5) * 5;
+      }
+
+      function isQuickieOver(modeId, s) {
+        if (modeId !== "quickie") return false;
+        var m = MODES.quickie;
+        var sqmFactor = 1 + 0.6 * (s.sqm - 60) / 60;
+        var raw = m.base * Math.max(0.6, Math.min(2.5, sqmFactor))
+          + Math.max(0, s.bedrooms - 1) * m.roomBonus
+          + Math.max(0, s.bathrooms - 1) * m.bathBonus;
+        return raw > m.cap;
+      }
+
+      var PROFILES = {
+        guided:    { label: "Guided",     blurb: "Walks you through, with the reasoning.",   tipDefault: true,  tone: "explain" },
+        friendly:  { label: "Friendly",   blurb: "Default. Direct, warm, no fluff.",          tipDefault: false, tone: "default" },
+        brief:     { label: "Brief",      blurb: "Just the commands, no extras.",             tipDefault: null,  tone: "short" },
+        playful:   { label: "Playful",    blurb: "Snappier copy and a lighter vibe.",         tipDefault: false, tone: "playful" },
+        preGuests: { label: "Pre-guests", blurb: "Quick refresh before company arrives.",     tipDefault: false, tone: "guest" }
+      };
+
+      function getBody(step, modeId, profile) {
+        var raw = step.body && step.body[modeId];
+        if (!raw) return null;
+        var tone = PROFILES[profile] && PROFILES[profile].tone || "default";
+        if (tone === "short") {
+          // first sentence only
+          var first = raw.split(/(?<=\.)\s/)[0];
+          return first;
+        }
+        if (tone === "explain") {
+          return raw;
+        }
+        if (tone === "playful") {
+          return raw;
+        }
+        return raw;
+      }
+
+      function applySupplyAdaptation(body, step, settings) {
+        // Very light substitution — e.g., "Vanish" → "any stain treatment" when missing
+        if (!body) return body;
+        if (step.requires && step.requires.indexOf("vanish") >= 0 && !settings.supplies.vanish) {
+          body = body.replace(/with Vanish/g, "— any stain treatment you've got");
+        }
+        if (step.requires && step.requires.indexOf("allPurpose") >= 0 && !settings.supplies.allPurpose) {
+          body = body.replace(/\+ Ajax/g, "+ dish soap")
+                     .replace(/with Ajax/g, "with dish soap and water");
+        }
+        return body;
+      }
+
+      function missingSupplies(step, settings) {
+        if (!step.requires) return [];
+        return step.requires.filter(function (r) { return !settings.supplies[r]; });
+      }
+
+      function shouldSkipStep(step, modeId, settings) {
+        if (step.skipFor && step.skipFor(settings)) return true;
+        if (step.requiresExtra && !settings.extras[step.requiresExtra]) return true;
+        // requires vacuum but no vacuum → skip entirely
+        if (step.requires && step.requires.indexOf("vacuum") >= 0 && !settings.supplies.vacuum) return true;
+        if (step.requires && step.requires.indexOf("mop") >= 0 && !settings.supplies.mop) return true;
+        // houseguest hides deep clean and skips heavy steps
+        if (settings.profile === "preGuests") {
+          if (["oven-appliances", "windows-details", "garage", "mop-floors"].indexOf(step.id) >= 0) return true;
+        }
+        // 0 bedrooms → skip bed steps
+        if (settings.bedrooms === 0 && (step.id === "strip-beds" || step.id === "make-beds-laundry" || step.id === "make-bed-quickie")) return true;
+        return false;
+      }
+
+      function getVisibleSteps(modeId, settings) {
+        return STEPS.filter(function (st) {
+          if (st.visibleIn.indexOf(modeId) < 0) return false;
+          if (shouldSkipStep(st, modeId, settings)) return false;
+          return true;
+        });
+      }
+
+      function materialize(step, modeId, settings) {
+        var profile = settings.profile;
+        var body = getBody(step, modeId, profile);
+        body = applySupplyAdaptation(body, step, settings);
+        // bedroom substitution
+        if (body && settings.bedrooms > 1) {
+          body = body.replace(/the bed\b/g, "the beds")
+                     .replace(/all the bedding/g, "bedding from all " + settings.bedrooms + " beds");
+        }
+        var missing = missingSupplies(step, settings);
+        return {
+          id: step.id,
+          emoji: step.emoji,
+          illustration: step.illustration,
+          room: step.room,
+          title: step.title,
+          body: body,
+          tip: step.tip,
+          bonus: !!step.bonus,
+          missing: missing
+        };
+      }
+
+      function modeMissingSupplies(modeId, settings) {
+        var visible = getVisibleSteps(modeId, settings);
+        var set = {};
+        visible.forEach(function (st) {
+          missingSupplies(st, settings).forEach(function (m) { set[m] = true; });
+        });
+        return Object.keys(set);
+      }
+
+      var SUPPLY_LABELS = {
+        allPurpose: "All-purpose cleaner",
+        vanish: "Vanish (stain remover)",
+        toiletCleaner: "Toilet cleaner",
+        cloths: "Microfibre cloths",
+        mop: "Mop",
+        vacuum: "Vacuum"
+      };
+
+      var EXTRA_LABELS = {
+        stairs: "Stairs",
+        garden: "Garden / terrace",
+        garage: "Garage",
+        balcony: "Balcony",
+        mudroom: "Mudroom / entryway",
+        laundryRoom: "Laundry room"
+      };
+
+      function fmtTime(s) {
+        if (s < 0) s = 0;
+        var m = Math.floor(s / 60), r = s % 60;
+        return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
+      }
+
+      function personalise(text, settings) {
+        if (!settings.name) return text;
+        return text.replace(/\{name\}/g, settings.name);
+      }
+
+      // ============================================================
+      // GAMIFICATION HELPERS
+      // ============================================================
+      var DAY_MS = 86400000;
+      var XP_PER_STEP = 10;
+      var XP_PER_CLEAN = 50;
+      var STREAK_GRACE_DAYS = 8;
+
+      function getEncouragement(idx, total, profile) {
+        var ratio = total > 1 ? idx / (total - 1) : 1;
+        if (idx === 0) return "Let's go.";
+        if (idx === total - 1) return "Last one — finish strong.";
+        if (ratio >= 0.75) return "Almost there.";
+        if (ratio >= 0.5) return "Halfway. Nice pace.";
+        if (idx === 1) return profile === "playful" ? "On fire 🔥" : "Nice start.";
+        return null;
+      }
+
+      function updateStreakOnComplete(settings, now) {
+        var last = settings.streakLastAt || 0;
+        var days = last ? (now - last) / DAY_MS : Infinity;
+        var current = (days < STREAK_GRACE_DAYS && last > 0) ? (settings.streakCurrent + 1) : 1;
+        // Don't re-bump if completing two runs in the same day (already counted today)
+        if (last > 0 && days < 1 && settings.streakCurrent > 0) current = settings.streakCurrent;
+        var best = Math.max(settings.streakBest || 0, current);
+        return { streakCurrent: current, streakBest: best, streakLastAt: now };
+      }
+
+      function isSameMonth(a, b) {
+        var da = new Date(a), db = new Date(b);
+        return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth();
+      }
+      function monthlyStats(history, now) {
+        if (!history || !history.length) return { runs: 0, minutes: 0 };
+        var runs = 0, minutes = 0;
+        for (var i = 0; i < history.length; i++) {
+          if (isSameMonth(history[i].completedAt, now)) {
+            runs += 1;
+            minutes += history[i].minutes || 0;
+          }
+        }
+        return { runs: runs, minutes: minutes };
+      }
+
+      // Small confetti factory — returns array of pieces with style
+      function makeConfetti(count, color) {
+        var palette = ["#D4A24E", "#7E8BBE", "#B56B8A", "#FFD370", "#5B9E8F"];
+        var pieces = [];
+        for (var i = 0; i < count; i++) {
+          pieces.push({
+            left: Math.random() * 100,
+            delay: Math.random() * 0.4,
+            color: color || palette[i % palette.length],
+            rotate: Math.random() * 360,
+            duration: 1.2 + Math.random() * 0.8
+          });
+        }
+        return pieces;
+      }
+
+      function Confetti(props) {
+        var pieces = useMemo(function () { return makeConfetti(props.count || 18, props.color); }, [props.count, props.color]);
+        return h("div", { className: "confetti-host" },
+          pieces.map(function (p, i) {
+            return h("div", {
+              key: i,
+              className: "confetti-piece",
+              style: {
+                left: p.left + "%",
+                background: p.color,
+                transform: "rotate(" + p.rotate + "deg)",
+                animationDelay: p.delay + "s",
+                animationDuration: p.duration + "s"
+              }
+            });
+          }));
+      }
+
+      function StreakChip(props) {
+        if (!props.count || props.count < 2) return null;
+        return h("span", { className: "streak-chip", "aria-label": props.count + "-day streak" },
+          h("span", { className: "flame" }, "🔥"),
+          h("span", null, props.count));
+      }
+
+      // ============================================================
+      // ILLUSTRATIONS
+      // ============================================================
+      function Illustration(props) {
+        var kind = props.kind, color = props.color;
+        var commonAttrs = { width: 140, height: 90, viewBox: "0 0 140 90", fill: "none" };
+
+        if (kind === "trash") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, strokeLinecap: "round" },
+              h("path", { d: "M55 35 L55 75 Q55 80 60 80 L80 80 Q85 80 85 75 L85 35 Z" }),
+              h("path", { d: "M50 35 L90 35" }), h("path", { d: "M65 30 L75 30" }),
+              h("line", { x1: 63, y1: 45, x2: 63, y2: 70, opacity: 0.5 }),
+              h("line", { x1: 70, y1: 45, x2: 70, y2: 70, opacity: 0.5 }),
+              h("line", { x1: 77, y1: 45, x2: 77, y2: 70, opacity: 0.5 }),
+              h("g", { opacity: 0.7 },
+                h("circle", { cx: 58, cy: 22, r: 1.5 },
+                  h("animate", { attributeName: "cy", values: "22;10;22", dur: "2.2s", repeatCount: "indefinite" }),
+                  h("animate", { attributeName: "opacity", values: "0.7;0;0.7", dur: "2.2s", repeatCount: "indefinite" })),
+                h("circle", { cx: 70, cy: 20, r: 1.5 },
+                  h("animate", { attributeName: "cy", values: "20;6;20", dur: "2.6s", repeatCount: "indefinite", begin: "0.4s" }),
+                  h("animate", { attributeName: "opacity", values: "0.7;0;0.7", dur: "2.6s", repeatCount: "indefinite", begin: "0.4s" })),
+                h("circle", { cx: 82, cy: 22, r: 1.5 },
+                  h("animate", { attributeName: "cy", values: "22;10;22", dur: "2.4s", repeatCount: "indefinite", begin: "0.8s" }),
+                  h("animate", { attributeName: "opacity", values: "0.7;0;0.7", dur: "2.4s", repeatCount: "indefinite", begin: "0.8s" })))));
+        }
+        if (kind === "tidy") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none" },
+              h("line", { x1: 20, y1: 65, x2: 120, y2: 65, opacity: 0.4 }),
+              h("rect", { x: 40, y: 48, width: 16, height: 16, rx: 2 },
+                h("animate", { attributeName: "x", values: "20;40;40;40;20", keyTimes: "0;0.25;0.5;0.75;1", dur: "3.6s", repeatCount: "indefinite" })),
+              h("rect", { x: 62, y: 48, width: 16, height: 16, rx: 2 },
+                h("animate", { attributeName: "x", values: "100;62;62;62;100", keyTimes: "0;0.25;0.5;0.75;1", dur: "3.6s", repeatCount: "indefinite" })),
+              h("rect", { x: 84, y: 48, width: 16, height: 16, rx: 2 },
+                h("animate", { attributeName: "x", values: "120;84;84;84;120", keyTimes: "0;0.3;0.5;0.75;1", dur: "3.6s", repeatCount: "indefinite", begin: "0.3s" }))));
+        }
+        if (kind === "wipe") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("line", { x1: 20, y1: 70, x2: 120, y2: 70, opacity: 0.4 }),
+              h("rect", { x: 58, y: 42, width: 24, height: 16, rx: 3, fill: color, fillOpacity: 0.15 },
+                h("animate", { attributeName: "x", values: "30;90;30", dur: "2.4s", repeatCount: "indefinite" })),
+              h("path", { d: "M35 60 Q40 56 45 60", opacity: 0.5 },
+                h("animate", { attributeName: "d", values: "M35 60 Q40 56 45 60;M85 60 Q90 56 95 60;M35 60 Q40 56 45 60", dur: "2.4s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "droplet") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none" },
+              h("path", { d: "M50 68 Q50 78 60 78 L80 78 Q90 78 90 68 L88 50 L52 50 Z" }),
+              h("ellipse", { cx: 70, cy: 72, rx: 14, ry: 3, opacity: 0.5 }),
+              h("path", { d: "M70 20 Q66 28 66 32 Q66 36 70 36 Q74 36 74 32 Q74 28 70 20Z", fill: color, stroke: "none" },
+                h("animateTransform", { attributeName: "transform", type: "translate", values: "0 0; 0 28; 0 0", keyTimes: "0;0.6;1", dur: "2.2s", repeatCount: "indefinite" }),
+                h("animate", { attributeName: "opacity", values: "1;1;0;1", keyTimes: "0;0.55;0.65;1", dur: "2.2s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "swirl") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("g", { transform: "translate(70 45)" },
+                h("path", { d: "M0 0 m -22 0 a 22 22 0 1 0 44 0 a 18 18 0 1 1 -36 0 a 14 14 0 1 0 28 0 a 10 10 0 1 1 -20 0" },
+                  h("animateTransform", { attributeName: "transform", type: "rotate", from: "0", to: "360", dur: "3.6s", repeatCount: "indefinite" })))));
+        }
+        if (kind === "bed") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 22, y: 50, width: 96, height: 22, rx: 3 }),
+              h("line", { x1: 22, y1: 58, x2: 118, y2: 58, opacity: 0.4 }),
+              h("rect", { x: 28, y: 42, width: 22, height: 10, rx: 2, fill: color, fillOpacity: 0.2 }),
+              h("path", { d: "M55 64 Q70 60 85 64 T115 64", opacity: 0.6 },
+                h("animate", { attributeName: "d", values: "M55 68 Q70 62 85 68 T115 68;M55 64 Q70 64 85 64 T115 64;M55 68 Q70 62 85 68 T115 68", dur: "3s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "candle") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 60, y: 42, width: 20, height: 34, rx: 2 }),
+              h("line", { x1: 70, y1: 42, x2: 70, y2: 36 }),
+              h("path", { d: "M70 36 Q63 28 70 18 Q77 28 70 36Z", fill: color, fillOpacity: 0.55, stroke: "none" },
+                h("animateTransform", { attributeName: "transform", type: "scale", additive: "sum", values: "1 1; 0.92 1.08; 1 1; 1.05 0.95; 1 1", keyTimes: "0;0.25;0.5;0.75;1", dur: "1.4s", repeatCount: "indefinite" }),
+                h("animate", { attributeName: "fill-opacity", values: "0.55;0.75;0.55;0.65;0.55", dur: "1.4s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "oven") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 42, y: 30, width: 56, height: 50, rx: 4 }),
+              h("rect", { x: 48, y: 42, width: 44, height: 30, rx: 2 }),
+              h("line", { x1: 48, y1: 36, x2: 92, y2: 36, opacity: 0.5 }),
+              h("circle", { cx: 86, cy: 36, r: 1.5, fill: color, stroke: "none" }),
+              h("path", { d: "M64 64 Q68 56 70 60 Q72 52 76 64Z", fill: color, fillOpacity: 0.5, stroke: "none" },
+                h("animate", { attributeName: "fill-opacity", values: "0.3;0.7;0.3;0.6;0.3", dur: "1.6s", repeatCount: "indefinite" }),
+                h("animateTransform", { attributeName: "transform", type: "scale", additive: "sum", values: "1 1; 0.94 1.1; 1 1", dur: "1.6s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "windows") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 40, y: 24, width: 60, height: 52, rx: 2 }),
+              h("line", { x1: 70, y1: 24, x2: 70, y2: 76, opacity: 0.5 }),
+              h("line", { x1: 40, y1: 50, x2: 100, y2: 50, opacity: 0.5 }),
+              h("path", { d: "M44 70 L60 36", strokeWidth: 3, opacity: 0.5 },
+                h("animate", { attributeName: "opacity", values: "0.1;0.7;0.1", dur: "2.2s", repeatCount: "indefinite" }),
+                h("animateTransform", { attributeName: "transform", type: "translate", values: "0 0; 40 0; 0 0", dur: "2.2s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "appliances") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 30, y: 44, width: 32, height: 36, rx: 3 }),
+              h("circle", { cx: 46, cy: 58, r: 5 }),
+              h("rect", { x: 72, y: 50, width: 36, height: 30, rx: 3 }),
+              h("rect", { x: 78, y: 56, width: 24, height: 18, rx: 1 }),
+              h("path", { d: "M46 40 Q42 34 46 30 Q50 34 46 40", opacity: 0.6 },
+                h("animate", { attributeName: "opacity", values: "0.2;0.8;0.2", dur: "1.8s", repeatCount: "indefinite" }),
+                h("animateTransform", { attributeName: "transform", type: "translate", values: "0 0; 0 -6; 0 0", dur: "1.8s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "mop") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("line", { x1: 20, y1: 76, x2: 120, y2: 76, opacity: 0.4 }),
+              h("g",
+                h("line", { x1: 70, y1: 20, x2: 70, y2: 60 }),
+                h("path", { d: "M60 60 L80 60 L82 74 L58 74 Z", fill: color, fillOpacity: 0.3 }),
+                h("animateTransform", { attributeName: "transform", type: "translate", values: "-20 0; 20 0; -20 0", dur: "2.6s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "fridge") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 50, y: 22, width: 40, height: 60, rx: 3 }),
+              h("line", { x1: 50, y1: 42, x2: 90, y2: 42, opacity: 0.5 }),
+              h("rect", { x: 84, y: 28, width: 3, height: 8, rx: 1, fill: color, stroke: "none" }),
+              h("rect", { x: 84, y: 48, width: 3, height: 14, rx: 1, fill: color, stroke: "none" }),
+              h("g", { transform: "translate(50 50)" },
+                h("rect", { x: 0, y: -28, width: 40, height: 60, rx: 3, fill: color, fillOpacity: 0.05 },
+                  h("animateTransform", { attributeName: "transform", type: "rotate", values: "0 0 0; -25 0 0; 0 0 0; 0 0 0", keyTimes: "0;0.3;0.6;1", dur: "3.4s", repeatCount: "indefinite" })))));
+        }
+        if (kind === "details") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("line", { x1: 20, y1: 72, x2: 120, y2: 72, opacity: 0.4 }),
+              h("g",
+                h("circle", { cx: 0, cy: 0, r: 10 }),
+                h("line", { x1: 7, y1: 7, x2: 14, y2: 14 }),
+                h("animateTransform", { attributeName: "transform", type: "translate", values: "40 50; 100 50; 40 50", dur: "3.6s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "walkthrough") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("rect", { x: 50, y: 22, width: 40, height: 60, rx: 3 }),
+              h("circle", { cx: 82, cy: 52, r: 1.5, fill: color, stroke: "none" }),
+              h("g", { transform: "translate(96 52)" },
+                h("circle", { cx: 0, cy: 0, r: 5 }),
+                h("line", { x1: 5, y1: 0, x2: 14, y2: 0 }),
+                h("line", { x1: 10, y1: -3, x2: 10, y2: 0 }),
+                h("animateTransform", { attributeName: "transform", type: "rotate", values: "0 0 0; -45 0 0; 0 0 0", keyTimes: "0;0.5;1", dur: "2.4s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "stairs") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("path", { d: "M30 78 L30 64 L50 64 L50 52 L70 52 L70 40 L90 40 L90 28 L110 28" }),
+              h("g", { fill: color, stroke: "none" },
+                h("circle", { cx: 38, cy: 70, r: 1.5, opacity: 0.7 },
+                  h("animate", { attributeName: "opacity", values: "0.7;0.1;0.7", dur: "1.8s", repeatCount: "indefinite", begin: "0s" })),
+                h("circle", { cx: 58, cy: 58, r: 1.5, opacity: 0.7 },
+                  h("animate", { attributeName: "opacity", values: "0.7;0.1;0.7", dur: "1.8s", repeatCount: "indefinite", begin: "0.3s" })),
+                h("circle", { cx: 78, cy: 46, r: 1.5, opacity: 0.7 },
+                  h("animate", { attributeName: "opacity", values: "0.7;0.1;0.7", dur: "1.8s", repeatCount: "indefinite", begin: "0.6s" })),
+                h("circle", { cx: 98, cy: 34, r: 1.5, opacity: 0.7 },
+                  h("animate", { attributeName: "opacity", values: "0.7;0.1;0.7", dur: "1.8s", repeatCount: "indefinite", begin: "0.9s" })))));
+        }
+        if (kind === "garden") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("line", { x1: 20, y1: 72, x2: 120, y2: 72, opacity: 0.4 }),
+              h("path", { d: "M50 60 Q60 40 70 50 Q80 30 90 50 Q100 40 95 60Z", fill: color, fillOpacity: 0.15 }),
+              h("line", { x1: 70, y1: 50, x2: 70, y2: 72, opacity: 0.5 }),
+              h("circle", { cx: 36, cy: 60, r: 2.5, fill: color, stroke: "none", opacity: 0.6 },
+                h("animateTransform", { attributeName: "transform", type: "translate", values: "0 0; 70 -6; 0 0", dur: "3.4s", repeatCount: "indefinite" }),
+                h("animate", { attributeName: "opacity", values: "0.6;0;0.6", dur: "3.4s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "garage") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("path", { d: "M30 80 L30 40 L70 22 L110 40 L110 80 Z" }),
+              h("rect", { x: 50, y: 50, width: 40, height: 30, rx: 2 }),
+              h("line", { x1: 50, y1: 60, x2: 90, y2: 60, opacity: 0.5 }),
+              h("line", { x1: 50, y1: 70, x2: 90, y2: 70, opacity: 0.5 }),
+              h("circle", { cx: 38, cy: 38, r: 1.5, fill: color, stroke: "none" },
+                h("animate", { attributeName: "opacity", values: "0.6;0.1;0.6", dur: "2s", repeatCount: "indefinite" }))));
+        }
+        if (kind === "balcony") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("line", { x1: 20, y1: 64, x2: 120, y2: 64 }),
+              h("line", { x1: 30, y1: 64, x2: 30, y2: 50 }),
+              h("line", { x1: 50, y1: 64, x2: 50, y2: 50 }),
+              h("line", { x1: 70, y1: 64, x2: 70, y2: 50 }),
+              h("line", { x1: 90, y1: 64, x2: 90, y2: 50 }),
+              h("line", { x1: 110, y1: 64, x2: 110, y2: 50 }),
+              h("line", { x1: 20, y1: 50, x2: 120, y2: 50 }),
+              h("g", { transform: "translate(100 64)" },
+                h("rect", { x: -5, y: -10, width: 10, height: 10, rx: 1, fill: color, fillOpacity: 0.2 }),
+                h("path", { d: "M-2 -10 Q0 -18 2 -10" }),
+                h("animateTransform", { attributeName: "transform", type: "rotate", values: "-3 100 64; 3 100 64; -3 100 64", dur: "2.8s", repeatCount: "indefinite", additive: "sum" }))));
+        }
+        if (kind === "mudroom") {
+          return h("svg", commonAttrs,
+            h("g", { stroke: color, strokeWidth: 2, fill: "none", strokeLinecap: "round" },
+              h("line", { x1: 20, y1: 72, x2: 120, y2: 72, opacity: 0.4 }),
+              h("path", { d: "M48 72 L48 58 Q48 50 56 50 L64 50 L64 72 Z", fill: color, fillOpacity: 0.15 }),
+              h("path", { d: "M76 72 L76 58 Q76 50 84 50 L92 50 L92 72 Z", fill: color, fillOpacity: 0.15 }),
+              h("g", { opacity: 0.6 },
+                h("circle", { cx: 32, cy: 70, r: 1.5, fill: color, stroke: "none" },
+                  h("animate", { attributeName: "cy", values: "70;64;70", dur: "2.4s", repeatCount: "indefinite" }),
+                  h("animate", { attributeName: "opacity", values: "0.7;0;0.7", dur: "2.4s", repeatCount: "indefinite" })),
+                h("circle", { cx: 108, cy: 70, r: 1.5, fill: color, stroke: "none" },
+                  h("animate", { attributeName: "cy", values: "70;64;70", dur: "2.6s", repeatCount: "indefinite", begin: "0.4s" }),
+                  h("animate", { attributeName: "opacity", values: "0.7;0;0.7", dur: "2.6s", repeatCount: "indefinite", begin: "0.4s" })))));
+        }
+
+        return h("svg", commonAttrs); // empty placeholder
+      }
+
+      // ============================================================
+      // SHARED UI
+      // ============================================================
+      function TimerChip(props) {
+        var expired = props.secondsLeft <= 0;
+        var cls = "timer-chip" + (expired ? " expired" : "") + (props.running ? " running" : " paused");
+        return h("button", { className: cls, onClick: props.onToggle, "aria-label": props.running ? "Pause timer" : "Resume timer" },
+          h("span", { className: "timer-dot", style: { background: props.color } }),
+          h("span", { className: "timer-text" }, fmtTime(props.secondsLeft)));
+      }
+
+      function ProgressBar(props) {
+        var total = props.total, index = props.index, color = props.color;
+        var segs = [];
+        for (var i = 0; i < total; i++) {
+          segs.push(h("span", {
+            key: i,
+            className: "seg" + (i <= index ? " on" : ""),
+            style: i <= index ? { background: color } : undefined
+          }));
+        }
+        return h("div", { className: "progress" }, segs);
+      }
+
+      function SlideToStart(props) {
+        var color = props.color, onComplete = props.onComplete;
+        var trackRef = useRef(null);
+        var st = useState(0);          var thumbX = st[0], setThumbX = st[1];
+        var dst = useState(false);     var dragging = dst[0], setDragging = dst[1];
+        var stateRef = useRef({ startX: 0, startThumb: 0, maxX: 0, fired: false });
+
+        var begin = useCallback(function (clientX) {
+          if (!trackRef.current) return;
+          var rect = trackRef.current.getBoundingClientRect();
+          var maxX = Math.max(0, rect.width - 56 - 8);
+          stateRef.current = { startX: clientX, startThumb: thumbX, maxX: maxX, fired: false };
+          setDragging(true);
+        }, [thumbX]);
+        var move = useCallback(function (clientX) {
+          var s = stateRef.current;
+          if (s.fired) return;
+          var nx = s.startThumb + (clientX - s.startX);
+          if (nx < 0) nx = 0;
+          if (nx > s.maxX) nx = s.maxX;
+          setThumbX(nx);
+        }, []);
+        var end = useCallback(function () {
+          var s = stateRef.current;
+          setDragging(false);
+          if (thumbX >= s.maxX * 0.85 && !s.fired) {
+            s.fired = true;
+            setThumbX(s.maxX);
+            setTimeout(function () { onComplete(); }, 160);
+          } else {
+            setThumbX(0);
+          }
+        }, [thumbX, onComplete]);
+
+        useEffect(function () {
+          if (!dragging) return;
+          function onMM(e) { move(e.clientX); }
+          function onMU() { end(); }
+          function onTM(e) { if (e.touches[0]) move(e.touches[0].clientX); }
+          function onTE() { end(); }
+          window.addEventListener("mousemove", onMM);
+          window.addEventListener("mouseup", onMU);
+          window.addEventListener("touchmove", onTM, { passive: true });
+          window.addEventListener("touchend", onTE);
+          return function () {
+            window.removeEventListener("mousemove", onMM);
+            window.removeEventListener("mouseup", onMU);
+            window.removeEventListener("touchmove", onTM);
+            window.removeEventListener("touchend", onTE);
+          };
+        }, [dragging, move, end]);
+
+        var maxX = stateRef.current.maxX;
+        var pct = maxX ? thumbX / maxX : 0;
+        return h("div", { className: "slide-track", ref: trackRef, style: { borderColor: color } },
+          h("div", { className: "slide-fill", style: { width: (pct * 100) + "%", background: color } }),
+          h("div", { className: "slide-hint", style: { opacity: 1 - pct } }, "Slide to start →"),
+          h("div", {
+            className: "slide-thumb",
+            style: {
+              transform: "translateX(" + thumbX + "px)",
+              transition: dragging ? "none" : "transform 0.3s ease",
+              background: color
+            },
+            onMouseDown: function (e) { e.preventDefault(); begin(e.clientX); },
+            onTouchStart: function (e) { if (e.touches[0]) begin(e.touches[0].clientX); }
+          }, h("span", null, "→")));
+      }
+
+      // ============================================================
+      // SETUP FLOW
+      // ============================================================
+      var SETUP_STEPS = [
+        "welcome", "dwelling", "bedrooms", "bathrooms",
+        "size", "extras", "profile", "name", "supplies", "done"
+      ];
+
+      function Setup(props) {
+        var initial = props.initial;
+        var st = useState(initial);  var draft = st[0], setDraft = st[1];
+        var ix = useState(0);        var step = ix[0], setStep = ix[1];
+
+        function patch(p) { setDraft(Object.assign({}, draft, p)); }
+        function patchExtras(p) { setDraft(Object.assign({}, draft, { extras: Object.assign({}, draft.extras, p) })); }
+        function patchSupplies(p) { setDraft(Object.assign({}, draft, { supplies: Object.assign({}, draft.supplies, p) })); }
+
+        function next() {
+          if (step + 1 >= SETUP_STEPS.length) {
+            var final = Object.assign({}, draft, { setupComplete: true });
+            props.onComplete(final);
+            return;
+          }
+          setStep(step + 1);
+        }
+        function back() { if (step > 0) setStep(step - 1); }
+        function skip() { next(); }
+
+        var key = SETUP_STEPS[step];
+        var canBack = step > 0;
+        var nextLabel = (key === "done") ? "Pick a mode →" : "Continue →";
+
+        var content;
+        if (key === "welcome") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("div", { className: "launch-emoji", style: { textAlign: "center" } }, "🧹"),
+            h("h2", null, "Welcome to The Clean Machine."),
+            h("p", { className: "lede" }, "Tell us about your place. Takes 30 seconds. The app then knows exactly what to do — and when you're done."));
+        } else if (key === "dwelling") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("h2", null, "What kind of place?"),
+            h("p", { className: "lede" }, "Houses and flats need slightly different work."),
+            h("div", { className: "big-card-grid" },
+              [["flat", "🏢", "Flat / apartment", "Single floor. No outdoor area unless you've got a balcony."],
+               ["house", "🏡", "House", "Multiple floors, outdoor space, possibly a garage."],
+               ["townhouse", "🏘️", "Townhouse", "Multi-level but tight. Probably stairs, maybe a small garden."]
+              ].map(function (row) {
+                var selected = draft.dwelling === row[0];
+                return h("button", {
+                  key: row[0], className: "big-card" + (selected ? " selected" : ""),
+                  onClick: function () {
+                    var ex = Object.assign({}, draft.extras);
+                    if (row[0] === "house") { ex.stairs = true; ex.garden = true; ex.balcony = false; }
+                    else if (row[0] === "townhouse") { ex.stairs = true; ex.garden = false; ex.balcony = false; }
+                    else { ex.stairs = false; ex.garden = false; ex.balcony = true; }
+                    setDraft(Object.assign({}, draft, { dwelling: row[0], extras: ex }));
+                  }
+                },
+                  h("div", { className: "big-card-emoji" }, row[1]),
+                  h("div", { className: "big-card-title" }, row[2]),
+                  h("div", { className: "big-card-blurb" }, row[3]));
+              })));
+        } else if (key === "bedrooms") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("h2", null, "How many bedrooms?"),
+            h("p", { className: "lede" }, "0 if it's a studio."),
+            h("div", { className: "stepper" },
+              h("button", { onClick: function () { patch({ bedrooms: Math.max(0, draft.bedrooms - 1) }); } }, "−"),
+              h("div", { className: "stepper-value" }, draft.bedrooms),
+              h("button", { onClick: function () { patch({ bedrooms: Math.min(6, draft.bedrooms + 1) }); } }, "+")));
+        } else if (key === "bathrooms") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("h2", null, "How many bathrooms?"),
+            h("p", { className: "lede" }, "Every extra bathroom adds a bathroom round."),
+            h("div", { className: "stepper" },
+              h("button", { onClick: function () { patch({ bathrooms: Math.max(1, draft.bathrooms - 1) }); } }, "−"),
+              h("div", { className: "stepper-value" }, draft.bathrooms),
+              h("button", { onClick: function () { patch({ bathrooms: Math.min(4, draft.bathrooms + 1) }); } }, "+")));
+        } else if (key === "size") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("h2", null, "How big is it?"),
+            h("p", { className: "lede" }, "Square metres. Drives how much time each mode actually needs."),
+            h("div", { className: "slider-wrap" },
+              h("div", { className: "sqm-row" },
+                h("div", null, h("span", { className: "sqm-value" }, draft.sqm), h("span", { className: "sqm-unit" }, " m²")),
+                h("div", { className: "sqm-band" }, sizeBand(draft.sqm) + " place")),
+              h("input", {
+                type: "range", min: 20, max: 300, step: 5, value: draft.sqm,
+                onChange: function (e) { patch({ sqm: parseInt(e.target.value, 10) }); }
+              })));
+        } else if (key === "extras") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("h2", null, "Any of these?"),
+            h("p", { className: "lede" }, "Anything you tick gets its own step."),
+            h("div", { className: "chip-grid" },
+              Object.keys(EXTRA_LABELS).map(function (k) {
+                var on = !!draft.extras[k];
+                return h("button", {
+                  key: k, className: "chip" + (on ? " on" : ""),
+                  onClick: function () { var p = {}; p[k] = !on; patchExtras(p); }
+                },
+                  h("span", { className: "chip-mark" }, on ? "✓" : ""),
+                  EXTRA_LABELS[k]);
+              })));
+        } else if (key === "profile") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("h2", null, "Who's using the app?"),
+            h("p", { className: "lede" }, "Sets the tone. You can change this any time."),
+            h("div", { className: "big-card-grid" },
+              ["guided", "friendly", "brief", "playful", "preGuests"].map(function (k) {
+                var p = PROFILES[k];
+                var selected = draft.profile === k;
+                return h("button", {
+                  key: k, className: "big-card" + (selected ? " selected" : ""),
+                  onClick: function () { patch({ profile: k }); }
+                },
+                  h("div", { className: "big-card-title" }, p.label),
+                  h("div", { className: "big-card-blurb" }, p.blurb));
+              })));
+        } else if (key === "name") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("h2", null, "What should I call you?"),
+            h("p", { className: "lede" }, "Optional. Used to make the launch screen a bit more personal."),
+            h("input", {
+              type: "text", className: "name-input", placeholder: "Your name (skip to leave blank)",
+              value: draft.name, maxLength: 30,
+              onChange: function (e) { patch({ name: e.target.value }); }
+            }));
+        } else if (key === "supplies") {
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("h2", null, "What have you got?"),
+            h("p", { className: "lede" }, "Untick anything you don't own. We'll work around it."),
+            h("div", { className: "chip-grid" },
+              Object.keys(SUPPLY_LABELS).map(function (k) {
+                var on = !!draft.supplies[k];
+                return h("button", {
+                  key: k, className: "chip" + (on ? " on" : ""),
+                  onClick: function () { var p = {}; p[k] = !on; patchSupplies(p); }
+                },
+                  h("span", { className: "chip-mark" }, on ? "✓" : ""),
+                  SUPPLY_LABELS[k]);
+              })));
+        } else if (key === "done") {
+          var greeting = draft.name ? ("You're set, " + draft.name + ".") : "You're set.";
+          content = h("div", { className: "setup-step fade-up", key: key },
+            h("div", { className: "launch-emoji", style: { textAlign: "center" } }, "✨"),
+            h("h2", null, greeting),
+            h("p", { className: "lede" }, "Pick a mode and I'll walk you through it."));
+        }
+
+        var progress = h("div", { className: "setup-progress" },
+          SETUP_STEPS.map(function (_, i) {
+            return h("span", { key: i, className: "seg" + (i <= step ? " on" : "") });
+          }));
+
+        return h("div", { className: "screen setup" },
+          progress,
+          content,
+          h("div", { className: "setup-foot" },
+            canBack ? h("button", { className: "setup-back", onClick: back }, "← Back") : null,
+            (key === "name") ? h("button", { className: "setup-skip", onClick: function () { patch({ name: "" }); next(); } }, "Skip") : null,
+            h("button", { className: "setup-next", onClick: next }, nextLabel)));
+      }
+
+      // ============================================================
+      // SETTINGS SCREEN
+      // ============================================================
+      function Settings(props) {
+        var initial = props.initial;
+        var st = useState(initial);  var draft = st[0], setDraft = st[1];
+
+        function patch(p) { setDraft(Object.assign({}, draft, p)); }
+        function patchExtras(p) { setDraft(Object.assign({}, draft, { extras: Object.assign({}, draft.extras, p) })); }
+        function patchSupplies(p) { setDraft(Object.assign({}, draft, { supplies: Object.assign({}, draft.supplies, p) })); }
+
+        return h("div", { className: "screen settings fade-up" },
+          h("div", { className: "header" },
+            h("button", { className: "back", onClick: function () { props.onCancel(); } }, "← Back"),
+            h("h2", null, "Settings")),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Place"),
+            h("div", { className: "big-card-grid" },
+              [["flat", "Flat / apartment"], ["house", "House"], ["townhouse", "Townhouse"]].map(function (row) {
+                var selected = draft.dwelling === row[0];
+                return h("button", {
+                  key: row[0], className: "big-card" + (selected ? " selected" : ""),
+                  onClick: function () { patch({ dwelling: row[0] }); }
+                }, h("div", { className: "big-card-title" }, row[1]));
+              }))),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Rooms"),
+            h("div", { className: "stepper" },
+              h("button", { onClick: function () { patch({ bedrooms: Math.max(0, draft.bedrooms - 1) }); } }, "−"),
+              h("div", { className: "stepper-value" }, draft.bedrooms + " bed" + (draft.bedrooms === 1 ? "" : "s")),
+              h("button", { onClick: function () { patch({ bedrooms: Math.min(6, draft.bedrooms + 1) }); } }, "+")),
+            h("div", { className: "stepper" },
+              h("button", { onClick: function () { patch({ bathrooms: Math.max(1, draft.bathrooms - 1) }); } }, "−"),
+              h("div", { className: "stepper-value" }, draft.bathrooms + " bath" + (draft.bathrooms === 1 ? "" : "s")),
+              h("button", { onClick: function () { patch({ bathrooms: Math.min(4, draft.bathrooms + 1) }); } }, "+"))),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Size"),
+            h("div", { className: "sqm-row" },
+              h("div", null, h("span", { className: "sqm-value" }, draft.sqm), h("span", { className: "sqm-unit" }, " m²")),
+              h("div", { className: "sqm-band" }, sizeBand(draft.sqm) + " place")),
+            h("input", {
+              type: "range", min: 20, max: 300, step: 5, value: draft.sqm,
+              onChange: function (e) { patch({ sqm: parseInt(e.target.value, 10) }); }
+            })),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Extras"),
+            h("div", { className: "chip-grid" },
+              Object.keys(EXTRA_LABELS).map(function (k) {
+                var on = !!draft.extras[k];
+                return h("button", {
+                  key: k, className: "chip" + (on ? " on" : ""),
+                  onClick: function () { var p = {}; p[k] = !on; patchExtras(p); }
+                },
+                  h("span", { className: "chip-mark" }, on ? "✓" : ""),
+                  EXTRA_LABELS[k]);
+              }))),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Profile"),
+            h("div", { className: "big-card-grid" },
+              ["guided", "friendly", "brief", "playful", "preGuests"].map(function (k) {
+                var p = PROFILES[k];
+                var selected = draft.profile === k;
+                return h("button", {
+                  key: k, className: "big-card" + (selected ? " selected" : ""),
+                  onClick: function () { patch({ profile: k }); }
+                },
+                  h("div", { className: "big-card-title" }, p.label),
+                  h("div", { className: "big-card-blurb" }, p.blurb));
+              }))),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Name"),
+            h("input", {
+              type: "text", className: "name-input", placeholder: "Your name (optional)",
+              value: draft.name, maxLength: 30,
+              onChange: function (e) { patch({ name: e.target.value }); }
+            })),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Supplies"),
+            h("div", { className: "chip-grid" },
+              Object.keys(SUPPLY_LABELS).map(function (k) {
+                var on = !!draft.supplies[k];
+                return h("button", {
+                  key: k, className: "chip" + (on ? " on" : ""),
+                  onClick: function () { var p = {}; p[k] = !on; patchSupplies(p); }
+                },
+                  h("span", { className: "chip-mark" }, on ? "✓" : ""),
+                  SUPPLY_LABELS[k]);
+              }))),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Pace"),
+            h("button", {
+              className: "chip" + (draft.showTimer !== false ? " on" : ""),
+              onClick: function () { patch({ showTimer: !(draft.showTimer !== false) }); }
+            },
+              h("span", { className: "chip-mark" }, draft.showTimer !== false ? "✓" : ""),
+              "Show countdown timer")),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Stats"),
+            h("div", { className: "done-stats" },
+              h("div", { className: "stat-chip" },
+                h("span", { className: "stat-value" }, draft.streakCurrent || 0),
+                h("span", { className: "stat-label" }, "🔥 streak")),
+              h("div", { className: "stat-chip" },
+                h("span", { className: "stat-value" }, draft.streakBest || 0),
+                h("span", { className: "stat-label" }, "best streak")),
+              h("div", { className: "stat-chip" },
+                h("span", { className: "stat-value" }, draft.runCount || 0),
+                h("span", { className: "stat-label" }, "total runs")),
+              h("div", { className: "stat-chip" },
+                h("span", { className: "stat-value" }, draft.totalXP || 0),
+                h("span", { className: "stat-label" }, "total XP")))),
+
+          h("button", {
+            className: "primary-btn save-btn",
+            style: { background: "#E8E4DC" },
+            onClick: function () { props.onSave(draft); }
+          }, "Save")
+        );
+      }
+
+      // ============================================================
+      // MODE PICKER
+      // ============================================================
+      function ModePicker(props) {
+        var settings = props.settings;
+        var visibleModes = MODE_ORDER.filter(function (id) {
+          if (settings.profile === "preGuests" && id === "shebang") return false;
+          return true;
+        });
+        var greeting = settings.name ? ("Right, " + settings.name + ".") : "Pick your pace.";
+        return h("div", { className: "screen mode-picker fade-up" },
+          h("div", { className: "top-row" },
+            h("div", null, h(StreakChip, { count: settings.streakCurrent })),
+            h("button", { className: "gear-btn", onClick: props.onOpenSettings, "aria-label": "Settings" }, "⚙")),
+          h("header", { className: "hero" },
+            h("h1", null, "The Clean Machine"),
+            h("p", { className: "sub" }, greeting + " The app tells you what to do — no thinking required.")),
+          h("div", { className: "mode-list" },
+            visibleModes.map(function (id) {
+              var m = MODES[id];
+              var mins = estimateMinutes(id, settings);
+              var steps = getVisibleSteps(id, settings).length;
+              return h("button", {
+                key: id, className: "mode-card",
+                style: { borderColor: m.color },
+                onClick: function () { props.onSelect(id); }
+              },
+                h("div", { className: "mode-card-top" },
+                  h("span", { className: "mode-label", style: { color: m.color } }, m.label),
+                  h("span", { className: "mode-duration" }, "~" + mins + " min · " + steps + " steps")),
+                h("span", { className: "mode-blurb" }, m.blurb),
+                h("span", { className: "mode-arrow", style: { color: m.color } }, "→"));
+            })),
+          h("footer", { className: "picker-foot" }, "No accounts. No ads. Just clean."));
+      }
+
+      // ============================================================
+      // LAUNCH SCREEN (per mode)
+      // ============================================================
+      function ModeLaunch(props) {
+        var mode = props.mode, settings = props.settings;
+        var steps = getVisibleSteps(mode.id, settings).length;
+        var mins = estimateMinutes(mode.id, settings);
+        var capped = isQuickieOver(mode.id, settings);
+        var missing = modeMissingSupplies(mode.id, settings);
+
+        var addressLine = settings.name ? ("Right, " + settings.name + ". ") : "";
+        var headline = addressLine + steps + " steps. " + mins + " minutes.";
+
+        return h("div", { className: "screen launch fade-up" },
+          h("button", { className: "back", onClick: props.onBack }, "← Back"),
+          h("div", { className: "launch-body" },
+            h("div", { className: "launch-emoji" }, mode.emoji),
+            h("h2", null, headline, " ",
+              h("span", { style: { color: mode.color } }, "You got this.")),
+            h("div", { className: "launch-time", style: { color: mode.color } }, fmtTime(mins * 60)),
+            capped ? h("p", { className: "launch-cap" },
+              "Quickie maxes out at " + mode.cap + " min. For a place this size, Standard is more realistic.") : null,
+            missing.length > 0 ? h("div", { className: "pre-warn", style: { borderColor: mode.color } },
+              h("div", { className: "pre-warn-title", style: { color: mode.color } }, "Heads up — adapted because you're missing:"),
+              h("ul", null, missing.map(function (k) { return h("li", { key: k }, SUPPLY_LABELS[k]); }))
+            ) : null,
+            h(SlideToStart, { color: mode.color, onComplete: props.onStart }),
+            h("p", { className: "launch-foot" }, "Drag the thumb across to begin.")));
+      }
+
+      // ============================================================
+      // TASK CARD (unified)
+      // ============================================================
+      function TaskCard(props) {
+        var step = props.step, total = props.total, color = props.color;
+        var settings = props.settings;
+        var isLast = props.stepIndex === total - 1;
+        var profile = PROFILES[settings.profile] || PROFILES.friendly;
+        var tipEnabled = profile.tone !== "short"; // pro hides tip pill
+        var tipDefaultOpen = profile.tipDefault === true;
+
+        var et = useState(tipDefaultOpen);
+        var expandedTip = et[0], setExpandedTip = et[1];
+        var xf = useState(0); var xpKey = xf[0], setXpKey = xf[1];
+        var ms = useState(false); var milestoneFire = ms[0], setMilestoneFire = ms[1];
+
+        useEffect(function () {
+          setExpandedTip(tipDefaultOpen);
+        }, [step.id, tipDefaultOpen]);
+
+        // Milestone confetti: at halfway and last step
+        useEffect(function () {
+          var ratio = total > 1 ? props.stepIndex / (total - 1) : 1;
+          if (props.stepIndex > 0 && (Math.abs(ratio - 0.5) < 0.05 || ratio >= 0.99)) {
+            setMilestoneFire(true);
+            var t = setTimeout(function () { setMilestoneFire(false); }, 1800);
+            return function () { clearTimeout(t); };
+          }
+        }, [props.stepIndex, total]);
+
+        var encouragement = getEncouragement(props.stepIndex, total, settings.profile);
+
+        function handleNext() {
+          setXpKey(function (k) { return k + 1; });
+          // Slight delay so XP float is briefly visible before transition
+          setTimeout(function () { props.onNext(); }, 220);
+        }
+
+        return h("div", { className: "screen task-card-screen", style: { position: "relative" } },
+          milestoneFire ? h(Confetti, { count: 14, color: color }) : null,
+          h("div", { className: "task-top" },
+            h(ProgressBar, { total: total, index: props.stepIndex, color: color }),
+            h(StreakChip, { count: settings.streakCurrent }),
+            props.showTimer
+              ? h(TimerChip, { color: color, secondsLeft: props.secondsLeft, running: props.timerRunning, onToggle: props.onOpenTimerSheet })
+              : h("button", { className: "show-timer-link", onClick: props.onShowTimer }, "show timer")
+          ),
+          encouragement ? h("div", { className: "encouragement" }, encouragement) : null,
+          h("div", { key: props.animKey, className: "task-card bounce-in" },
+            h("span", { className: "room-tag", style: { borderColor: color, color: color } }, step.room),
+            h("div", { className: "big-emoji", "aria-hidden": "true" }, step.emoji),
+            h(Illustration, { kind: step.illustration, color: color }),
+            step.bonus ? h("span", { className: "bonus-tag", style: { borderColor: color, color: color } }, "bonus round") : null,
+            h("h2", { className: "step-title" }, step.title),
+            h("p", { className: "step-body" }, step.body),
+            step.missing && step.missing.length > 0
+              ? h("div", { className: "supply-warn", style: { borderColor: color } },
+                  h("span", { className: "supply-warn-strong", style: { color: color } }, "Missing: "),
+                  step.missing.map(function (k) { return SUPPLY_LABELS[k]; }).join(", "),
+                  ". Adapted accordingly.")
+              : null,
+            tipEnabled
+              ? h("button", {
+                  className: "tip-pill" + (expandedTip ? " open" : ""),
+                  onClick: function () { setExpandedTip(!expandedTip); },
+                  style: { borderColor: color }
+                },
+                  h("span", { style: { color: color } }, "💡 Tip"),
+                  expandedTip ? h("span", { className: "tip-body" }, " — " + step.tip) : null)
+              : null),
+          h("div", { className: "xp-float-host", style: { width: "100%" } },
+            xpKey > 0 ? h("div", { key: xpKey, className: "xp-float" }, "+" + XP_PER_STEP + " XP") : null,
+            h("button", { className: "primary-btn", style: { background: color }, onClick: handleNext },
+              isLast ? "Finish ✓" : "Done →")));
+      }
+
+      function TimerSheet(props) {
+        return h("div", { className: "sheet-backdrop", onClick: props.onCancel },
+          h("div", { className: "sheet", onClick: function (e) { e.stopPropagation(); } },
+            h("div", { className: "sheet-title" }, "Timer"),
+            h("button", { className: "sheet-btn primary", style: { background: props.color }, onClick: props.onPauseResume },
+              props.timerRunning ? "Pause" : "Resume"),
+            h("button", { className: "sheet-btn", onClick: props.onHide }, "Hide for this clean"),
+            h("button", { className: "sheet-btn", onClick: props.onCancel }, "Cancel")));
+      }
+
+      // ============================================================
+      // DONE SCREEN
+      // ============================================================
+      function DoneScreen(props) {
+        var settings = props.settings, mode = props.mode;
+        var name = settings.name;
+        var profile = settings.profile;
+        var jc = props.justCompleted || { streakNew: settings.streakCurrent, streakDelta: 0, newBest: false };
+        var monthly = monthlyStats(settings.runHistory, Date.now());
+        var xpGained = props.stepCount * XP_PER_STEP + XP_PER_CLEAN;
+
+        var headline, subline;
+        if (profile === "playful") { headline = name ? ("Top form, " + name + " 💪") : "Top form 💪"; subline = "That's a wrap on " + mode.label + "."; }
+        else if (profile === "brief") { headline = "Solid run."; subline = mode.label + " complete."; }
+        else if (profile === "preGuests") { headline = "Ready for the next guest."; subline = "Place looks fresh."; }
+        else if (profile === "guided") { headline = name ? ("Brilliant, " + name + ".") : "Brilliant."; subline = "You ran a full " + mode.label + " from start to finish."; }
+        else { headline = name ? ("Nice work, " + name + ".") : "Done."; subline = "You ran " + mode.label + " from start to finish."; }
+
+        var streakLine = null;
+        if (jc.newBest && jc.streakNew >= 2) {
+          streakLine = "🎉 New best: " + jc.streakNew + "-day streak!";
+        } else if (jc.streakNew >= 2) {
+          streakLine = "🔥 Day " + jc.streakNew + " of your streak.";
+        } else if (jc.streakNew === 1 && jc.streakDelta > 0) {
+          streakLine = "🔥 Streak started — keep it rolling next week.";
+        }
+
+        return h("div", { className: "screen done-screen fade-up", style: { position: "relative" } },
+          h(Confetti, { count: 28, color: mode.color }),
+          h("div", { className: "done-emoji bounce-in" }, "✨"),
+          h("h2", null, headline),
+          h("p", null, subline, " Enjoy the place."),
+          streakLine ? h("div", { className: "streak-banner" }, streakLine) : null,
+          h("div", { className: "done-stats" },
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, "+" + xpGained),
+              h("span", { className: "stat-label" }, "XP")),
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, props.stepCount),
+              h("span", { className: "stat-label" }, "steps")),
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, props.minutesUsed),
+              h("span", { className: "stat-label" }, "minutes"))),
+          h("div", { className: "done-stats" },
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, monthly.runs),
+              h("span", { className: "stat-label" }, "this month")),
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, monthly.minutes),
+              h("span", { className: "stat-label" }, "min this month")),
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, settings.totalXP || 0),
+              h("span", { className: "stat-label" }, "total XP"))),
+          h("button", { className: "primary-btn", style: { background: mode.color }, onClick: props.onRestart }, "Pick another mode"));
+      }
+
+      // ============================================================
+      // APP
+      // ============================================================
+      function App() {
+        var ss = useState(loadSettings);     var settings = ss[0], setSettings = ss[1];
+        var ph = useState("picker");          var phase = ph[0], setPhase = ph[1];
+        // phase: "setup" | "picker" | "settings" | "launch" | "running" | "done"
+        var mo = useState(null);              var mode = mo[0], setMode = mo[1];
+        var si = useState(0);                 var stepIndex = si[0], setStepIndex = si[1];
+        var sl = useState(0);                 var secondsLeft = sl[0], setSecondsLeft = sl[1];
+        var tr = useState(false);             var timerRunning = tr[0], setTimerRunning = tr[1];
+        var ak = useState(0);                 var animKey = ak[0], setAnimKey = ak[1];
+        var hs = useState(false);             var hideTimerSession = hs[0], setHideTimerSession = hs[1];
+        var sh = useState(false);             var sheetOpen = sh[0], setSheetOpen = sh[1];
+        var jc = useState(null);              var justCompleted = jc[0], setJustCompleted = jc[1]; // { streakDelta, streakNew, newBest }
+        var startedAt = useRef(0);
+        var initialSeconds = useRef(0);
+
+        // gate on setup
+        useEffect(function () {
+          if (!settings.setupComplete) setPhase("setup");
+        }, []);
+
+        // timer
+        useEffect(function () {
+          if (!timerRunning) return;
+          if (secondsLeft <= 0) return;
+          var id = setInterval(function () { setSecondsLeft(function (s) { return s - 1; }); }, 1000);
+          return function () { clearInterval(id); };
+        }, [timerRunning, secondsLeft]);
+
+        function persist(s) { setSettings(s); saveSettings(s); }
+
+        function selectMode(id) {
+          var m = MODES[id];
+          var mins = estimateMinutes(id, settings);
+          initialSeconds.current = mins * 60;
+          setMode(m);
+          setSecondsLeft(mins * 60);
+          setTimerRunning(false);
+          setStepIndex(0);
+          setAnimKey(function (k) { return k + 1; });
+          setHideTimerSession(false);
+          setSheetOpen(false);
+          setJustCompleted(null);
+          setPhase("launch");
+        }
+        function backToPicker() {
+          setPhase("picker");
+          setMode(null);
+          setTimerRunning(false);
+          setHideTimerSession(false);
+          setSheetOpen(false);
+          setJustCompleted(null);
+        }
+        function openSettings() { setPhase("settings"); }
+        function saveSettings_(s) { persist(s); setPhase("picker"); }
+        function cancelSettings() { setPhase("picker"); }
+        function finishSetup(s) { persist(s); setPhase("picker"); }
+        function startRun() {
+          setPhase("running");
+          setTimerRunning(true);
+          startedAt.current = Date.now();
+        }
+        function next() {
+          var visible = getVisibleSteps(mode.id, settings);
+          setAnimKey(function (k) { return k + 1; });
+          if (stepIndex + 1 >= visible.length) {
+            setPhase("done");
+            setTimerRunning(false);
+            var now = Date.now();
+            var streak = updateStreakOnComplete(settings, now);
+            var minutesUsed = Math.max(0, Math.round((initialSeconds.current - secondsLeft) / 60));
+            var entry = { mode: mode.id, completedAt: now, minutes: minutesUsed, steps: visible.length };
+            var history = (settings.runHistory || []).slice(-99);
+            history.push(entry);
+            var newBest = streak.streakBest > (settings.streakBest || 0);
+            setJustCompleted({
+              streakNew: streak.streakCurrent,
+              streakDelta: streak.streakCurrent - (settings.streakCurrent || 0),
+              newBest: newBest
+            });
+            persist(Object.assign({}, settings, {
+              runCount: (settings.runCount || 0) + 1,
+              lastCompletedAt: now,
+              totalXP: (settings.totalXP || 0) + visible.length * XP_PER_STEP + XP_PER_CLEAN,
+              streakCurrent: streak.streakCurrent,
+              streakBest: streak.streakBest,
+              streakLastAt: streak.streakLastAt,
+              runHistory: history
+            }));
+          } else {
+            setStepIndex(stepIndex + 1);
+          }
+        }
+
+        // render
+        if (phase === "setup") {
+          return h(Setup, { initial: settings, onComplete: finishSetup });
+        }
+        if (phase === "settings") {
+          return h(Settings, { initial: settings, onSave: saveSettings_, onCancel: cancelSettings });
+        }
+        if (phase === "picker" || !mode) {
+          return h(ModePicker, { settings: settings, onSelect: selectMode, onOpenSettings: openSettings });
+        }
+        if (phase === "launch") {
+          return h(ModeLaunch, { mode: mode, settings: settings, onStart: startRun, onBack: backToPicker });
+        }
+        if (phase === "done") {
+          var minutesUsed = Math.round((initialSeconds.current - secondsLeft) / 60);
+          if (minutesUsed < 0) minutesUsed = 0;
+          var visibleNow = getVisibleSteps(mode.id, settings);
+          return h(DoneScreen, {
+            mode: mode, settings: settings,
+            stepCount: visibleNow.length,
+            minutesUsed: minutesUsed,
+            justCompleted: justCompleted,
+            onRestart: backToPicker
+          });
+        }
+
+        // running
+        var visible = getVisibleSteps(mode.id, settings);
+        var step = visible[stepIndex];
+        if (!step) {
+          // edge: settings changed mid-run made step list shorter
+          return h(DoneScreen, {
+            mode: mode, settings: settings,
+            stepCount: visible.length,
+            minutesUsed: Math.round((initialSeconds.current - secondsLeft) / 60),
+            justCompleted: justCompleted,
+            onRestart: backToPicker
+          });
+        }
+        var materialized = materialize(step, mode.id, settings);
+        var showTimer = settings.showTimer !== false && !hideTimerSession;
+        return h(React.Fragment, null,
+          h(TaskCard, {
+            step: materialized,
+            stepIndex: stepIndex,
+            total: visible.length,
+            color: mode.color,
+            animKey: animKey,
+            settings: settings,
+            secondsLeft: secondsLeft,
+            timerRunning: timerRunning,
+            showTimer: showTimer,
+            onOpenTimerSheet: function () { setSheetOpen(true); },
+            onShowTimer: function () { setHideTimerSession(false); },
+            onNext: next
+          }),
+          sheetOpen ? h(TimerSheet, {
+            color: mode.color,
+            timerRunning: timerRunning,
+            onPauseResume: function () { setTimerRunning(function (v) { return !v; }); setSheetOpen(false); },
+            onHide: function () { setHideTimerSession(true); setTimerRunning(false); setSheetOpen(false); },
+            onCancel: function () { setSheetOpen(false); }
+          }) : null
+        );
+      }
+
+      var root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(h(App));
+    })();
+  </script>
 </body>
 </html>
