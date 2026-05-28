@@ -14,7 +14,7 @@ The first time you open the app, a quick wizard asks:
 - **Bedrooms** + **bathrooms**
 - **Size** in m² (drives realistic time estimates)
 - **Extra spaces** (stairs, garden, garage, balcony, mudroom, laundry room — pre-checked based on dwelling)
-- **Profile** (Beginner / Casual / Pro / Teen / Houseguest — sets the tone)
+- **Profile** — the style of guidance you want (see below)
 - **Name** (optional, personalises the launch screen)
 - **Cleaning supplies** you have on hand
 
@@ -26,20 +26,21 @@ Every mode uses the same UX: a launch screen with a slide-to-start gesture, then
 
 | Mode | Base time | Vibe |
 | --- | --- | --- |
-| ⚡ The Quickie | 30 min | speed run, the essentials |
-| 🌿 Standard | ~1.5 hrs | solid all-around clean |
-| 💜 Thorough | ~2.5 hrs | everything gets attention |
-| 🌹 Deep Clean | ~4 hrs | every corner, every detail |
+| ⚡ **The Quickie** | 30 min | speed run, the essentials |
+| 💜 **The Deep Dive** | ~2 hrs | everything that matters, realistic but tight |
+| 🌹 **The Whole Shebang** | ~4 hrs | every corner, every detail |
 
-Time estimates and step counts scale to your setup: a 3-bedroom house with stairs and garden takes longer than a 1-bedroom flat. The Quickie has a 60-minute cap — bigger places see a "consider Standard" hint.
+Time estimates and step counts scale to your setup: a 3-bedroom house with stairs and garden takes longer than a 1-bedroom flat. The Quickie has a 60-minute cap — bigger places see a "consider The Deep Dive" hint.
 
-## Profile presets
+## Profiles
 
-- **Beginner** — patient, explanatory copy, tips open by default
-- **Casual** — default, direct, friendly
-- **Pro** — terse imperatives, tip pill omitted
-- **Teen** — snappy, low patience, light vibe
-- **Houseguest** — Airbnb / housesit framing; Deep Clean hidden
+Profiles describe the *style of guidance* you want from the app — not the user. Same as setting screen-reader verbosity. Switch any time from the gear icon.
+
+- **Guided** — Walks you through, with the reasoning. Tips open by default.
+- **Friendly** — Default. Direct, warm, no fluff.
+- **Brief** — Just the commands, no extras. Tip pill omitted.
+- **Playful** — Snappier copy and a lighter vibe.
+- **Pre-guests** — Quick refresh before company arrives. Hides The Whole Shebang.
 
 ## Files
 
@@ -56,6 +57,7 @@ Time estimates and step counts scale to your setup: a 3-bedroom house with stair
 ## Roadmap
 
 - Capacitor wrapper to ship as a native iOS/Android app
-- Spotify DJ — `MODES[id].mood` field is already reserved (energetic / upbeat / focused / long-mix); maps to a per-mode playlist when integrated
+- Spotify DJ — `MODES[id].mood` field is already reserved (energetic / focused / long-mix); maps to a per-mode playlist when integrated
 - Streaks + completion stats (`runCount` and `lastCompletedAt` already persisted)
 - Optional resume-where-you-left-off mid-run
+- Optional "hide the timer" toggle for users who find the countdown stressful

@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS = {
     stairs: false, garden: false, garage: false,
     balcony: false, mudroom: false, laundryRoom: false
   },
-  profile: "casual",
+  profile: "friendly",
   name: "",
   supplies: {
     allPurpose: true, vanish: true, toiletCleaner: true,
@@ -34,6 +34,8 @@ function loadSettings() {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const parsed = JSON.parse(raw);
+    const profileMap = { beginner: "guided", casual: "friendly", pro: "brief", teen: "playful", houseguest: "preGuests" };
+    if (profileMap[parsed.profile]) parsed.profile = profileMap[parsed.profile];
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
@@ -52,20 +54,17 @@ function saveSettings(s) {
 // MODES
 // ============================================================
 const MODES = {
-  quickie:  { id: "quickie",  label: "The Quickie", color: "#D4A24E", emoji: "⚡",
+  quickie:  { id: "quickie",  label: "The Quickie",       color: "#D4A24E", emoji: "⚡",
               blurb: "speed run, the essentials",
               base: 30,  cap: 60,  roomBonus: 2,  bathBonus: 3,  mood: "energetic" },
-  standard: { id: "standard", label: "Standard",    color: "#5B9E8F", emoji: "🌿",
-              blurb: "solid all-around clean",
-              base: 90,  cap: 180, roomBonus: 8,  bathBonus: 10, mood: "upbeat" },
-  thorough: { id: "thorough", label: "Thorough",    color: "#7E8BBE", emoji: "💜",
-              blurb: "everything gets attention",
-              base: 150, cap: 270, roomBonus: 12, bathBonus: 15, mood: "focused" },
-  deep:     { id: "deep",     label: "Deep Clean",  color: "#B56B8A", emoji: "🌹",
+  deepDive: { id: "deepDive", label: "The Deep Dive",     color: "#7E8BBE", emoji: "💜",
+              blurb: "everything that matters",
+              base: 120, cap: 240, roomBonus: 10, bathBonus: 12, mood: "focused" },
+  shebang:  { id: "shebang",  label: "The Whole Shebang", color: "#B56B8A", emoji: "🌹",
               blurb: "every corner, every detail",
               base: 240, cap: 360, roomBonus: 18, bathBonus: 22, mood: "long-mix" }
 };
-const MODE_ORDER = ["quickie", "standard", "thorough", "deep"];
+const MODE_ORDER = ["quickie", "deepDive", "shebang"];
 
 // ============================================================
 // STEPS (unified library)
@@ -77,12 +76,11 @@ const STEPS = [
     visibleIn: ["quickie"] },
   { id: "strip-beds", emoji: "🛏️", illustration: "bed", room: "Bedrooms", title: "Strip the Beds",
     body: {
-      standard: "Remove all the bedding. Gather towels from the bathroom. Start the wash at 60°C with Vanish — it'll run in the background.",
-      thorough: "Strip bedding AND mattress protectors. Gather all towels. Start the wash at 60°C with Vanish — runs while you clean.",
-      deep:     "Strip bedding AND mattress protectors. Gather all towels. Start the wash at 60°C with Vanish — it needs to be done by the time you finish."
+      deepDive: "Strip bedding AND mattress protectors. Gather all towels. Start the wash at 60°C with Vanish — runs while you clean.",
+      shebang:  "Strip bedding AND mattress protectors. Gather all towels. Start the wash at 60°C with Vanish — it needs to be done by the time you finish."
     },
     tip: "Get this running first so the laundry's ready when you are.",
-    requires: ["vanish"], visibleIn: ["standard", "thorough", "deep"],
+    requires: ["vanish"], visibleIn: ["deepDive", "shebang"],
     skipFor: s => s.bedrooms === 0 },
   { id: "tidy-up", emoji: "🧺", illustration: "tidy", room: "Whole place", title: "Tidy Up",
     body: { quickie: "Everything back where it lives. Bedside stuff in drawers, pillows in their spots, shoes by the door, remotes on the table, chargers tucked away. Refill water bottles." },
@@ -90,137 +88,124 @@ const STEPS = [
     visibleIn: ["quickie"] },
   { id: "declutter-trash", emoji: "🧹", illustration: "tidy", room: "Whole place", title: "Declutter & Trash",
     body: {
-      standard: "Visible clutter out. All rubbish in a bag. Bottles and cans collected for pant. Everything else back where it belongs.",
-      thorough: "Visible clutter out. Rubbish bagged. Pant collected. Then open drawers and cabinets — pull out anything that's drifted in there.",
-      deep:     "Visible clutter out. Rubbish bagged. Pant collected. Open every drawer and cabinet — pull out anything forgotten. Everything back where it lives."
+      deepDive: "Visible clutter out. Rubbish bagged. Pant collected. Then open drawers and cabinets — pull out anything that's drifted in there.",
+      shebang:  "Visible clutter out. Rubbish bagged. Pant collected. Open every drawer and cabinet — pull out anything forgotten. Everything back where it lives."
     },
     tip: "If it's been sitting out for a week, it doesn't live there.",
-    visibleIn: ["standard", "thorough", "deep"] },
+    visibleIn: ["deepDive", "shebang"] },
   { id: "fridge-reset", emoji: "🧊", illustration: "fridge", room: "Kitchen", title: "Restock the Fridge",
     body: {
-      standard: "Refill water bottles. Toss anything that's gone off. Canned food stays.",
-      thorough: "Refill water bottles. Toss anything past it. Wipe down the fridge shelves. Canned food stays.",
-      deep:     "Refill water bottles. Toss anything past it. Wipe down every shelf AND the drawers. Canned food stays."
+      deepDive: "Refill water bottles. Toss anything past it. Wipe down the fridge shelves. Canned food stays.",
+      shebang:  "Refill water bottles. Toss anything past it. Wipe down every shelf AND the drawers. Canned food stays."
     },
     tip: "If it's smelling, it's not staying.",
-    requires: ["cloths"], visibleIn: ["standard", "thorough", "deep"] },
+    requires: ["cloths"], visibleIn: ["deepDive", "shebang"] },
   { id: "oven-appliances", emoji: "🔥", illustration: "oven", room: "Kitchen", title: "Oven & Appliances",
-    body: { deep: "Spray oven cleaner inside, leave it to sit 20 minutes. While it works: wipe the hob, kettle, microwave, hood. Wipe cabinet fronts. Come back and scrub the oven." },
+    body: { shebang: "Spray oven cleaner inside, leave it to sit 20 minutes. While it works: wipe the hob, kettle, microwave, hood. Wipe cabinet fronts. Come back and scrub the oven." },
     tip: "Hit the oven first — it needs the time.",
-    requires: ["allPurpose", "cloths"], visibleIn: ["deep"] },
+    requires: ["allPurpose", "cloths"], visibleIn: ["shebang"] },
   { id: "wipe-surfaces", emoji: "🧽", illustration: "wipe", room: "All rooms", title: "Wipe Surfaces",
     body: {
       quickie:  "Wet cloth with a bit of soap. All surfaces — tables, counters, windowsills. Then a dry tea towel pass. Start kitchen, end bathroom.",
-      standard: "Bucket of warm water + Ajax. Every surface, room by room: bedrooms, living, kitchen, bathroom. Tea towel dry. Glass cleaner on the mirrors.",
-      thorough: "Bucket + Ajax. Every surface, room by room. Full appliance wipe: microwave, kettle, hood, hob. Tea towel dry. Glass cleaner on mirrors.",
-      deep:     "Bucket + Ajax. Every surface in order. Then door frame tops, skirting boards, lampshade tops. Dust the lampshades. Glass cleaner on mirrors."
+      deepDive: "Bucket + Ajax. Every surface, room by room. Full appliance wipe: microwave, kettle, hood, hob. Tea towel dry. Glass cleaner on mirrors.",
+      shebang:  "Bucket + Ajax. Every surface in order. Then door frame tops, skirting boards, lampshade tops. Dust the lampshades. Glass cleaner on mirrors."
     },
     tip: "Mirrors, light switches, door handles. The ones that get touched daily.",
-    requires: ["allPurpose", "cloths"], visibleIn: ["quickie", "standard", "thorough", "deep"] },
+    requires: ["allPurpose", "cloths"], visibleIn: ["quickie", "deepDive", "shebang"] },
   { id: "bathroom", emoji: "🚽", illustration: "droplet", room: "Bathroom", title: "Toilet & Shower",
     body: {
       quickie:  "Squirt cleaner in the bowl. Clear any hair from the shower. Let the cleaner sit. Toss all used cloths and tea towels in the wash.",
-      standard: "Toilet cleaner in the bowl. Sponge the sink and the toilet exterior. Scrub the bowl. Dry-wipe everything to a shine.",
-      thorough: "Toilet cleaner in the bowl. Sponge sink + toilet exterior. Scrub the bowl thoroughly. Scrub the tile grout. Dry-wipe to a shine.",
-      deep:     "Toilet cleaner in the bowl. Sponge sink + toilet exterior. Scrub the bowl. Scrub the grout. Descale the shower head. Dry-wipe to a shine."
+      deepDive: "Toilet cleaner in the bowl. Sponge sink + toilet exterior. Scrub the bowl thoroughly. Scrub the tile grout. Dry-wipe to a shine.",
+      shebang:  "Toilet cleaner in the bowl. Sponge sink + toilet exterior. Scrub the bowl. Scrub the grout. Descale the shower head. Dry-wipe to a shine."
     },
     tip: "A dry wipe at the end makes the bathroom look 10x better.",
-    requires: ["toiletCleaner", "cloths"], visibleIn: ["quickie", "standard", "thorough", "deep"] },
+    requires: ["toiletCleaner", "cloths"], visibleIn: ["quickie", "deepDive", "shebang"] },
   { id: "stairs", emoji: "🪜", illustration: "stairs", room: "Stairs", title: "Stairs Vacuum",
     body: {
       quickie:  "Hoover the stairs top to bottom. Don't skip the edges where dust gathers.",
-      standard: "Hoover the stairs top to bottom. Get the edges and the corner of each tread.",
-      thorough: "Hoover the stairs top to bottom. Switch to the nozzle for the edges and the riser corners.",
-      deep:     "Hoover the stairs top to bottom. Nozzle on the edges and corners. Wipe the banister with a damp cloth."
+      deepDive: "Hoover the stairs top to bottom. Switch to the nozzle for the edges and the riser corners.",
+      shebang:  "Hoover the stairs top to bottom. Nozzle on the edges and corners. Wipe the banister with a damp cloth."
     },
     tip: "Top to bottom — dust falls down, work with it.",
     requires: ["vacuum"], requiresExtra: "stairs",
-    visibleIn: ["quickie", "standard", "thorough", "deep"] },
+    visibleIn: ["quickie", "deepDive", "shebang"] },
   { id: "vacuum", emoji: "🌀", illustration: "swirl", room: "All rooms", title: "Vacuum",
     body: {
       quickie:  "Every room, fast. Don't move furniture. Hit every floor, carpet, and rug you can see.",
-      standard: "All floors, all carpets, all rugs. Corners and edges.",
-      thorough: "All floors, carpets, rugs. Switch to the nozzle for baseboards. Corners, edges, behind doors.",
-      deep:     "All floors, carpets, rugs. Nozzle on baseboards and corners. Under the sofa, under the bed. Upholstery brush on the couch cushions."
+      deepDive: "All floors, carpets, rugs. Switch to the nozzle for baseboards. Corners, edges, behind doors.",
+      shebang:  "All floors, carpets, rugs. Nozzle on baseboards and corners. Under the sofa, under the bed. Upholstery brush on the couch cushions."
     },
     tip: "Speed over perfection. If it looks clean from standing height, you're good.",
-    requires: ["vacuum"], visibleIn: ["quickie", "standard", "thorough", "deep"] },
+    requires: ["vacuum"], visibleIn: ["quickie", "deepDive", "shebang"] },
   { id: "mudroom", emoji: "🥾", illustration: "mudroom", room: "Mudroom", title: "Mudroom Reset",
     body: {
-      standard: "Boots and shoes lined up. Coats on hooks. Sweep the floor.",
-      thorough: "Boots lined up. Coats on hooks. Sweep AND mop. Wipe the bench.",
-      deep:     "Boots lined up. Coats on hooks. Sweep, mop, wipe the bench. Knock down any cobwebs in the corners."
+      deepDive: "Boots lined up. Coats on hooks. Sweep AND mop. Wipe the bench.",
+      shebang:  "Boots lined up. Coats on hooks. Sweep, mop, wipe the bench. Knock down any cobwebs in the corners."
     },
     tip: "Anything not currently in use goes in the cupboard.",
-    requiresExtra: "mudroom", visibleIn: ["standard", "thorough", "deep"] },
+    requiresExtra: "mudroom", visibleIn: ["deepDive", "shebang"] },
   { id: "mop-floors", emoji: "💧", illustration: "mop", room: "Hard floors", title: "Mop Floors",
     body: {
-      standard: "Warm water + wood floor treatment. Bedrooms → living → kitchen → bathroom. Kitchen and bathroom last.",
-      thorough: "Warm water + wood floor treatment. Bedrooms → living → kitchen → bathroom. Kitchen and bathroom last. Get the corners.",
-      deep:     "Warm water + wood floor treatment. Two passes on the high-traffic floors. Kitchen and bathroom last."
+      deepDive: "Warm water + wood floor treatment. Bedrooms → living → kitchen → bathroom. Kitchen and bathroom last. Get the corners.",
+      shebang:  "Warm water + wood floor treatment. Two passes on the high-traffic floors. Kitchen and bathroom last."
     },
     tip: "Always finish with the room nearest the door so you don't walk on wet floors.",
-    requires: ["mop"], visibleIn: ["standard", "thorough", "deep"] },
+    requires: ["mop"], visibleIn: ["deepDive", "shebang"] },
   { id: "windows-details", emoji: "🪟", illustration: "windows", room: "Whole place", title: "Windows & Details",
-    body: { deep: "Window glass on the inside, every room. Wipe down the blinds. Dust light bulbs and fixtures. Wipe the remotes and the light switches." },
+    body: { shebang: "Window glass on the inside, every room. Wipe down the blinds. Dust light bulbs and fixtures. Wipe the remotes and the light switches." },
     tip: "The details are what people notice without knowing why.",
-    requires: ["cloths"], visibleIn: ["deep"] },
+    requires: ["cloths"], visibleIn: ["shebang"] },
   { id: "garden", emoji: "🍃", illustration: "garden", room: "Outdoors", title: "Garden / Terrace",
     body: {
-      standard: "Quick sweep of the terrace. Clear obvious leaves and grit. Take garden waste to the bin.",
-      thorough: "Sweep the terrace. Wipe down outdoor furniture. Clear pots and plant trays of debris.",
-      deep:     "Sweep terrace. Wipe outdoor furniture. Tidy pots and trays. Hose down the surface if it's grimy."
+      deepDive: "Sweep the terrace. Wipe down outdoor furniture. Clear pots and plant trays of debris.",
+      shebang:  "Sweep terrace. Wipe outdoor furniture. Tidy pots and trays. Hose down the surface if it's grimy."
     },
     tip: "Outdoor dust travels indoors. Worth doing.",
-    requiresExtra: "garden", visibleIn: ["standard", "thorough", "deep"] },
+    requiresExtra: "garden", visibleIn: ["deepDive", "shebang"] },
   { id: "garage", emoji: "🚗", illustration: "garage", room: "Garage", title: "Garage Sweep",
     body: {
-      thorough: "Sweep the garage floor. Knock down cobwebs. Anything that doesn't belong here goes.",
-      deep:     "Sweep the garage floor end to end. Knock down cobwebs in the corners. Bin anything that doesn't live here."
+      deepDive: "Sweep the garage floor. Knock down cobwebs. Anything that doesn't belong here goes.",
+      shebang:  "Sweep the garage floor end to end. Knock down cobwebs in the corners. Bin anything that doesn't live here."
     },
     tip: "Cobwebs love garage corners. Look up.",
-    requiresExtra: "garage", visibleIn: ["thorough", "deep"] },
+    requiresExtra: "garage", visibleIn: ["deepDive", "shebang"] },
   { id: "balcony", emoji: "🌿", illustration: "balcony", room: "Balcony", title: "Balcony",
     body: {
       quickie:  "Quick sweep. Wipe the railing.",
-      standard: "Sweep the balcony. Wipe the railing. Take outdoor cushions inside if they're dusty.",
-      thorough: "Sweep. Wipe railing. Wipe down outdoor furniture and any plant trays.",
-      deep:     "Sweep. Wipe railing. Outdoor furniture wiped. Plant trays sorted. Hose the surface if needed."
+      deepDive: "Sweep. Wipe railing. Wipe down outdoor furniture and any plant trays.",
+      shebang:  "Sweep. Wipe railing. Outdoor furniture wiped. Plant trays sorted. Hose the surface if needed."
     },
     tip: "Easy win. Five minutes max in The Quickie.",
-    requiresExtra: "balcony", visibleIn: ["quickie", "standard", "thorough", "deep"] },
+    requiresExtra: "balcony", visibleIn: ["quickie", "deepDive", "shebang"] },
   { id: "laundry-room", emoji: "🧺", illustration: "appliances", room: "Laundry room", title: "Laundry Room",
     body: {
-      standard: "Wipe the washer and dryer. Empty the lint trap. Sweep the floor.",
-      thorough: "Wipe the washer, dryer, and surrounding shelves. Empty the lint trap. Sweep and mop.",
-      deep:     "Wipe the washer, dryer, shelves. Empty the lint trap. Sweep, mop, knock down cobwebs."
+      deepDive: "Wipe the washer, dryer, and surrounding shelves. Empty the lint trap. Sweep and mop.",
+      shebang:  "Wipe the washer, dryer, shelves. Empty the lint trap. Sweep, mop, knock down cobwebs."
     },
     tip: "The lint trap. Always.",
-    requiresExtra: "laundryRoom", visibleIn: ["standard", "thorough", "deep"] },
+    requiresExtra: "laundryRoom", visibleIn: ["deepDive", "shebang"] },
   { id: "make-bed-quickie", emoji: "🛏️", illustration: "bed", room: "Bedroom", title: "Make the Bed",
     body: { quickie: "Straighten the duvet, fluff the pillows. Two minutes — changes the whole room." },
     tip: "Pull the duvet tight from the far side first, then smooth toward you.",
     visibleIn: ["quickie"] },
   { id: "make-beds-laundry", emoji: "🛏️", illustration: "bed", room: "Bedrooms", title: "Beds & Laundry",
     body: {
-      standard: "Move the wash to the dryer. Put fresh sheets on the bed. Make it neatly.",
-      thorough: "Wash → dryer. Mattress protectors back on. Fresh sheets, tucked tight at the corners. Pillows fluffed and aligned.",
-      deep:     "Wash → dryer. Mattress protectors back on. Fresh sheets with hospital corners. Pillows fluffed."
+      deepDive: "Wash → dryer. Mattress protectors back on. Fresh sheets, tucked tight at the corners. Pillows fluffed and aligned.",
+      shebang:  "Wash → dryer. Mattress protectors back on. Fresh sheets with hospital corners. Pillows fluffed."
     },
     tip: "Tuck the bottom sheet hospital-style — corners at 45°.",
-    visibleIn: ["standard", "thorough", "deep"] },
+    visibleIn: ["deepDive", "shebang"] },
   { id: "finishing-touch", emoji: "🕯️", illustration: "candle", room: "Living room", title: "Finishing Touch",
     body: { quickie: "Light a candle if you're feeling cute." },
     tip: "Bonus round — not a requirement.",
     bonus: true, visibleIn: ["quickie"] },
   { id: "walkthrough", emoji: "🏁", illustration: "walkthrough", room: "Whole place", title: "Final Walkthrough",
     body: {
-      standard: "Trash out via the chute. Final lap with your eyes open. Lock up.",
-      thorough: "Trash out. Final lap — look at every room like a guest would. Lock up.",
-      deep:     "Trash out. Final lap. Walk through every room like a guest checking in. Lock up."
+      deepDive: "Trash out. Final lap — look at every room like a guest would. Lock up.",
+      shebang:  "Trash out. Final lap. Walk through every room like a guest checking in. Lock up."
     },
     tip: "Imagine you're the guest checking in.",
-    visibleIn: ["standard", "thorough", "deep"] }
+    visibleIn: ["deepDive", "shebang"] }
 ];
 
 // ============================================================
@@ -238,10 +223,7 @@ function estimateMinutes(modeId, s) {
   let minutes = m.base * Math.max(0.6, Math.min(2.5, sqmFactor));
   minutes += Math.max(0, s.bedrooms - 1) * m.roomBonus;
   minutes += Math.max(0, s.bathrooms - 1) * m.bathBonus;
-  const extrasBonusBase =
-    modeId === "quickie" ? 4 :
-    modeId === "standard" ? 8 :
-    modeId === "thorough" ? 12 : 15;
+  const extrasBonusBase = modeId === "quickie" ? 4 : modeId === "deepDive" ? 10 : 15;
   for (const k of ["stairs", "garden", "garage", "balcony", "mudroom", "laundryRoom"]) {
     if (s.extras[k]) minutes += extrasBonusBase;
   }
@@ -262,11 +244,11 @@ function isQuickieOver(modeId, s) {
 }
 
 const PROFILES = {
-  beginner:   { label: "Beginner",   blurb: "First clean? We'll walk you through it.", tipDefault: true,  tone: "explain" },
-  casual:     { label: "Casual",     blurb: "Default. Direct, friendly, no fluff.",     tipDefault: false, tone: "default" },
-  pro:        { label: "Pro",        blurb: "You know the drill. Just the commands.",   tipDefault: null,  tone: "short" },
-  teen:       { label: "Teen",       blurb: "Snappy, low patience, light vibe.",        tipDefault: false, tone: "teen" },
-  houseguest: { label: "Houseguest", blurb: "Airbnb / housesit. Refresh, not deep-clean.", tipDefault: false, tone: "guest" }
+  guided:    { label: "Guided",     blurb: "Walks you through, with the reasoning.",   tipDefault: true,  tone: "explain" },
+  friendly:  { label: "Friendly",   blurb: "Default. Direct, warm, no fluff.",          tipDefault: false, tone: "default" },
+  brief:     { label: "Brief",      blurb: "Just the commands, no extras.",             tipDefault: null,  tone: "short" },
+  playful:   { label: "Playful",    blurb: "Snappier copy and a lighter vibe.",         tipDefault: false, tone: "playful" },
+  preGuests: { label: "Pre-guests", blurb: "Quick refresh before company arrives.",     tipDefault: false, tone: "guest" }
 };
 
 function getBody(step, modeId, profile) {
@@ -298,7 +280,7 @@ function shouldSkipStep(step, modeId, settings) {
   if (step.requiresExtra && !settings.extras[step.requiresExtra]) return true;
   if (step.requires && step.requires.includes("vacuum") && !settings.supplies.vacuum) return true;
   if (step.requires && step.requires.includes("mop") && !settings.supplies.mop) return true;
-  if (settings.profile === "houseguest") {
+  if (settings.profile === "preGuests") {
     if (["oven-appliances", "windows-details", "garage", "mop-floors"].includes(step.id)) return true;
   }
   if (settings.bedrooms === 0 && ["strip-beds", "make-beds-laundry", "make-bed-quickie"].includes(step.id)) return true;
@@ -599,7 +581,7 @@ function Setup({ initial, onComplete }) {
         <h2>Who's using the app?</h2>
         <p className="lede">Sets the tone. You can change this any time.</p>
         <div className="big-card-grid">
-          {["beginner", "casual", "pro", "teen", "houseguest"].map(k => {
+          {["guided", "friendly", "brief", "playful", "preGuests"].map(k => {
             const p = PROFILES[k];
             const selected = draft.profile === k;
             return (
@@ -738,7 +720,7 @@ function SettingsScreen({ initial, onSave, onCancel }) {
       <div className="section">
         <div className="section-label">Profile</div>
         <div className="big-card-grid">
-          {["beginner", "casual", "pro", "teen", "houseguest"].map(k => (
+          {["guided", "friendly", "brief", "playful", "preGuests"].map(k => (
             <button key={k} className={"big-card" + (draft.profile === k ? " selected" : "")}
               onClick={() => patch({ profile: k })}>
               <div className="big-card-title">{PROFILES[k].label}</div>
@@ -779,7 +761,7 @@ function SettingsScreen({ initial, onSave, onCancel }) {
 // MODE PICKER
 // ============================================================
 function ModePicker({ settings, onSelect, onOpenSettings }) {
-  const visibleModes = MODE_ORDER.filter(id => !(settings.profile === "houseguest" && id === "deep"));
+  const visibleModes = MODE_ORDER.filter(id => !(settings.profile === "preGuests" && id === "shebang"));
   const greeting = settings.name ? `Right, ${settings.name}.` : "Pick your pace.";
   return (
     <div className="screen mode-picker fade-up">
@@ -850,7 +832,7 @@ function ModeLaunch({ mode, settings, onStart, onBack }) {
 // ============================================================
 function TaskCard({ step, stepIndex, total, color, animKey, settings, secondsLeft, timerRunning, onToggleTimer, onNext }) {
   const isLast = stepIndex === total - 1;
-  const profile = PROFILES[settings.profile] || PROFILES.casual;
+  const profile = PROFILES[settings.profile] || PROFILES.friendly;
   const tipEnabled = profile.tone !== "short";
   const tipDefaultOpen = profile.tipDefault === true;
   const [expandedTip, setExpandedTip] = useState(tipDefaultOpen);
@@ -899,16 +881,16 @@ function DoneScreen({ settings, mode, stepCount, minutesUsed, onRestart }) {
   const name = settings.name;
   const profile = settings.profile;
   let headline, subline;
-  if (profile === "teen") {
+  if (profile === "playful") {
     headline = name ? `Top form, ${name} 💪` : "Top form 💪";
     subline = `That's a wrap on ${mode.label}.`;
-  } else if (profile === "pro") {
+  } else if (profile === "brief") {
     headline = "Solid run.";
     subline = `${mode.label} complete.`;
-  } else if (profile === "houseguest") {
+  } else if (profile === "preGuests") {
     headline = "Ready for the next guest.";
     subline = "Place looks fresh.";
-  } else if (profile === "beginner") {
+  } else if (profile === "guided") {
     headline = name ? `Brilliant, ${name}.` : "Brilliant.";
     subline = `You ran a full ${mode.label} from start to finish.`;
   } else {
