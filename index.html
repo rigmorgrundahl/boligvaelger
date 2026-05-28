@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0E0E0C" />
   <title>The Clean Machine</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Clean Machine" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'&gt;&lt;rect width='180' height='180' rx='40' fill='%23D4A24E'/&gt;&lt;path d='M104 32L70 96h22l-10 52 38-66H98z' fill='%230E0E0C'/&gt;&lt;/svg&gt;" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -329,10 +334,16 @@
       font-weight: 800;
       font-size: 18px;
       letter-spacing: -0.01em;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-      transition: transform 0.12s ease, filter 0.15s ease;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.35), 0 6px 16px rgba(0,0,0,0.25);
+      transform: translateY(0);
+      transition: transform 0.07s ease, box-shadow 0.07s ease, filter 0.15s ease;
+      position: relative;
     }
-    .primary-btn:active { transform: scale(0.985); filter: brightness(1.05); }
+    .primary-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.35), 0 3px 8px rgba(0,0,0,0.25);
+      filter: brightness(1.05);
+    }
     .secondary-btn {
       width: 100%; min-height: 48px; border-radius: 12px;
       border: 1.5px solid var(--line);
@@ -366,6 +377,114 @@
       from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+    .bounce-in { animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    @keyframes bounceIn {
+      0%   { opacity: 0; transform: scale(0.7) translateY(8px); }
+      60%  { opacity: 1; transform: scale(1.08) translateY(0); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ---- Streak chip ---- */
+    .streak-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 10px;
+      border: 1.5px solid rgba(255, 140, 60, 0.45);
+      border-radius: 999px;
+      background: rgba(255, 110, 40, 0.12);
+      font-weight: 800; font-size: 13px;
+      color: #FFB070;
+      font-variant-numeric: tabular-nums;
+    }
+    .streak-chip .flame { font-size: 14px; }
+    .streak-banner {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 16px;
+      border: 1.5px solid rgba(255, 140, 60, 0.5);
+      border-radius: 14px;
+      background: rgba(255, 110, 40, 0.12);
+      font-weight: 700; font-size: 14px;
+      color: #FFB070;
+    }
+
+    /* ---- Encouragement (mid-step microcopy) ---- */
+    .encouragement {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted);
+      animation: encourageIn 0.4s ease-out both;
+    }
+    @keyframes encourageIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---- XP float (rewards on Done tap) ---- */
+    .xp-float-host { position: relative; }
+    .xp-float {
+      position: absolute; left: 50%; bottom: 100%;
+      transform: translateX(-50%);
+      font-family: "Bricolage Grotesque", sans-serif; font-weight: 800;
+      font-size: 22px; color: #FFD370;
+      pointer-events: none;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+      animation: xpFloat 0.95s ease-out both;
+    }
+    @keyframes xpFloat {
+      0%   { opacity: 0; transform: translate(-50%, 8px); }
+      15%  { opacity: 1; transform: translate(-50%, -2px); }
+      100% { opacity: 0; transform: translate(-50%, -60px); }
+    }
+
+    /* ---- Confetti (milestone + done) ---- */
+    .confetti-host { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .confetti-piece {
+      position: absolute; top: -20px; width: 8px; height: 12px;
+      border-radius: 2px;
+      animation: confettiFall 1.6s ease-in both;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translateY(120vh) rotate(540deg); opacity: 0; }
+    }
+
+    /* ---- Bottom sheet (mid-clean timer menu) ---- */
+    .sheet-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      animation: fadeBg 0.18s ease-out both;
+      z-index: 50;
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    @keyframes fadeBg { from { opacity: 0; } to { opacity: 1; } }
+    .sheet {
+      width: 100%; max-width: 480px;
+      background: #1a1916; border-top-left-radius: 22px; border-top-right-radius: 22px;
+      padding: 18px 20px 28px;
+      display: flex; flex-direction: column; gap: 10px;
+      animation: sheetUp 0.22s ease-out both;
+    }
+    @keyframes sheetUp { from { transform: translateY(40px); opacity: 0.2; } to { transform: translateY(0); opacity: 1; } }
+    .sheet-title { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; padding-bottom: 4px; }
+    .sheet-btn {
+      width: 100%; min-height: 52px; border-radius: 12px;
+      border: 1.5px solid var(--line);
+      background: var(--soft);
+      font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 16px;
+      color: var(--fg);
+      transition: background 0.12s ease, transform 0.08s ease;
+    }
+    .sheet-btn:active { background: rgba(255,255,255,0.08); transform: scale(0.98); }
+    .sheet-btn.primary { color: var(--bg); border: none; }
+
+    .show-timer-link {
+      align-self: flex-end;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+    }
 
     @media (max-height: 720px) {
       .big-emoji { font-size: 52px; }
@@ -383,6 +502,15 @@
 
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <script>
+    // Register service worker for PWA install + offline support
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./sw.js").catch(function () { /* ignore */ });
+      });
+    }
+  </script>
 
   <script>
     (function () {
@@ -413,9 +541,15 @@
           allPurpose: true, vanish: true, toiletCleaner: true,
           cloths: true, mop: true, vacuum: true
         },
+        showTimer: true,
         setupComplete: false,
         runCount: 0,
-        lastCompletedAt: 0
+        lastCompletedAt: 0,
+        streakCurrent: 0,
+        streakBest: 0,
+        streakLastAt: 0,
+        totalXP: 0,
+        runHistory: []  // array of { mode, completedAt, minutes }, capped at 100
       };
 
       function loadSettings() {
@@ -865,6 +999,91 @@
       function personalise(text, settings) {
         if (!settings.name) return text;
         return text.replace(/\{name\}/g, settings.name);
+      }
+
+      // ============================================================
+      // GAMIFICATION HELPERS
+      // ============================================================
+      var DAY_MS = 86400000;
+      var XP_PER_STEP = 10;
+      var XP_PER_CLEAN = 50;
+      var STREAK_GRACE_DAYS = 8;
+
+      function getEncouragement(idx, total, profile) {
+        var ratio = total > 1 ? idx / (total - 1) : 1;
+        if (idx === 0) return "Let's go.";
+        if (idx === total - 1) return "Last one — finish strong.";
+        if (ratio >= 0.75) return "Almost there.";
+        if (ratio >= 0.5) return "Halfway. Nice pace.";
+        if (idx === 1) return profile === "playful" ? "On fire 🔥" : "Nice start.";
+        return null;
+      }
+
+      function updateStreakOnComplete(settings, now) {
+        var last = settings.streakLastAt || 0;
+        var days = last ? (now - last) / DAY_MS : Infinity;
+        var current = (days < STREAK_GRACE_DAYS && last > 0) ? (settings.streakCurrent + 1) : 1;
+        // Don't re-bump if completing two runs in the same day (already counted today)
+        if (last > 0 && days < 1 && settings.streakCurrent > 0) current = settings.streakCurrent;
+        var best = Math.max(settings.streakBest || 0, current);
+        return { streakCurrent: current, streakBest: best, streakLastAt: now };
+      }
+
+      function isSameMonth(a, b) {
+        var da = new Date(a), db = new Date(b);
+        return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth();
+      }
+      function monthlyStats(history, now) {
+        if (!history || !history.length) return { runs: 0, minutes: 0 };
+        var runs = 0, minutes = 0;
+        for (var i = 0; i < history.length; i++) {
+          if (isSameMonth(history[i].completedAt, now)) {
+            runs += 1;
+            minutes += history[i].minutes || 0;
+          }
+        }
+        return { runs: runs, minutes: minutes };
+      }
+
+      // Small confetti factory — returns array of pieces with style
+      function makeConfetti(count, color) {
+        var palette = ["#D4A24E", "#7E8BBE", "#B56B8A", "#FFD370", "#5B9E8F"];
+        var pieces = [];
+        for (var i = 0; i < count; i++) {
+          pieces.push({
+            left: Math.random() * 100,
+            delay: Math.random() * 0.4,
+            color: color || palette[i % palette.length],
+            rotate: Math.random() * 360,
+            duration: 1.2 + Math.random() * 0.8
+          });
+        }
+        return pieces;
+      }
+
+      function Confetti(props) {
+        var pieces = useMemo(function () { return makeConfetti(props.count || 18, props.color); }, [props.count, props.color]);
+        return h("div", { className: "confetti-host" },
+          pieces.map(function (p, i) {
+            return h("div", {
+              key: i,
+              className: "confetti-piece",
+              style: {
+                left: p.left + "%",
+                background: p.color,
+                transform: "rotate(" + p.rotate + "deg)",
+                animationDelay: p.delay + "s",
+                animationDuration: p.duration + "s"
+              }
+            });
+          }));
+      }
+
+      function StreakChip(props) {
+        if (!props.count || props.count < 2) return null;
+        return h("span", { className: "streak-chip", "aria-label": props.count + "-day streak" },
+          h("span", { className: "flame" }, "🔥"),
+          h("span", null, props.count));
       }
 
       // ============================================================
@@ -1439,6 +1658,31 @@
                   SUPPLY_LABELS[k]);
               }))),
 
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Pace"),
+            h("button", {
+              className: "chip" + (draft.showTimer !== false ? " on" : ""),
+              onClick: function () { patch({ showTimer: !(draft.showTimer !== false) }); }
+            },
+              h("span", { className: "chip-mark" }, draft.showTimer !== false ? "✓" : ""),
+              "Show countdown timer")),
+
+          h("div", { className: "section" },
+            h("div", { className: "section-label" }, "Stats"),
+            h("div", { className: "done-stats" },
+              h("div", { className: "stat-chip" },
+                h("span", { className: "stat-value" }, draft.streakCurrent || 0),
+                h("span", { className: "stat-label" }, "🔥 streak")),
+              h("div", { className: "stat-chip" },
+                h("span", { className: "stat-value" }, draft.streakBest || 0),
+                h("span", { className: "stat-label" }, "best streak")),
+              h("div", { className: "stat-chip" },
+                h("span", { className: "stat-value" }, draft.runCount || 0),
+                h("span", { className: "stat-label" }, "total runs")),
+              h("div", { className: "stat-chip" },
+                h("span", { className: "stat-value" }, draft.totalXP || 0),
+                h("span", { className: "stat-label" }, "total XP")))),
+
           h("button", {
             className: "primary-btn save-btn",
             style: { background: "#E8E4DC" },
@@ -1459,7 +1703,7 @@
         var greeting = settings.name ? ("Right, " + settings.name + ".") : "Pick your pace.";
         return h("div", { className: "screen mode-picker fade-up" },
           h("div", { className: "top-row" },
-            h("div", null),
+            h("div", null, h(StreakChip, { count: settings.streakCurrent })),
             h("button", { className: "gear-btn", onClick: props.onOpenSettings, "aria-label": "Settings" }, "⚙")),
           h("header", { className: "hero" },
             h("h1", null, "The Clean Machine"),
@@ -1526,17 +1770,42 @@
 
         var et = useState(tipDefaultOpen);
         var expandedTip = et[0], setExpandedTip = et[1];
+        var xf = useState(0); var xpKey = xf[0], setXpKey = xf[1];
+        var ms = useState(false); var milestoneFire = ms[0], setMilestoneFire = ms[1];
 
         useEffect(function () {
-          // reset tip open state when step changes
           setExpandedTip(tipDefaultOpen);
         }, [step.id, tipDefaultOpen]);
 
-        return h("div", { className: "screen task-card-screen" },
+        // Milestone confetti: at halfway and last step
+        useEffect(function () {
+          var ratio = total > 1 ? props.stepIndex / (total - 1) : 1;
+          if (props.stepIndex > 0 && (Math.abs(ratio - 0.5) < 0.05 || ratio >= 0.99)) {
+            setMilestoneFire(true);
+            var t = setTimeout(function () { setMilestoneFire(false); }, 1800);
+            return function () { clearTimeout(t); };
+          }
+        }, [props.stepIndex, total]);
+
+        var encouragement = getEncouragement(props.stepIndex, total, settings.profile);
+
+        function handleNext() {
+          setXpKey(function (k) { return k + 1; });
+          // Slight delay so XP float is briefly visible before transition
+          setTimeout(function () { props.onNext(); }, 220);
+        }
+
+        return h("div", { className: "screen task-card-screen", style: { position: "relative" } },
+          milestoneFire ? h(Confetti, { count: 14, color: color }) : null,
           h("div", { className: "task-top" },
             h(ProgressBar, { total: total, index: props.stepIndex, color: color }),
-            h(TimerChip, { color: color, secondsLeft: props.secondsLeft, running: props.timerRunning, onToggle: props.onToggleTimer })),
-          h("div", { key: props.animKey, className: "task-card fade-up" },
+            h(StreakChip, { count: settings.streakCurrent }),
+            props.showTimer
+              ? h(TimerChip, { color: color, secondsLeft: props.secondsLeft, running: props.timerRunning, onToggle: props.onOpenTimerSheet })
+              : h("button", { className: "show-timer-link", onClick: props.onShowTimer }, "show timer")
+          ),
+          encouragement ? h("div", { className: "encouragement" }, encouragement) : null,
+          h("div", { key: props.animKey, className: "task-card bounce-in" },
             h("span", { className: "room-tag", style: { borderColor: color, color: color } }, step.room),
             h("div", { className: "big-emoji", "aria-hidden": "true" }, step.emoji),
             h(Illustration, { kind: step.illustration, color: color }),
@@ -1558,8 +1827,20 @@
                   h("span", { style: { color: color } }, "💡 Tip"),
                   expandedTip ? h("span", { className: "tip-body" }, " — " + step.tip) : null)
               : null),
-          h("button", { className: "primary-btn", style: { background: color }, onClick: props.onNext },
-            isLast ? "Finish ✓" : "Done →"));
+          h("div", { className: "xp-float-host", style: { width: "100%" } },
+            xpKey > 0 ? h("div", { key: xpKey, className: "xp-float" }, "+" + XP_PER_STEP + " XP") : null,
+            h("button", { className: "primary-btn", style: { background: color }, onClick: handleNext },
+              isLast ? "Finish ✓" : "Done →")));
+      }
+
+      function TimerSheet(props) {
+        return h("div", { className: "sheet-backdrop", onClick: props.onCancel },
+          h("div", { className: "sheet", onClick: function (e) { e.stopPropagation(); } },
+            h("div", { className: "sheet-title" }, "Timer"),
+            h("button", { className: "sheet-btn primary", style: { background: props.color }, onClick: props.onPauseResume },
+              props.timerRunning ? "Pause" : "Resume"),
+            h("button", { className: "sheet-btn", onClick: props.onHide }, "Hide for this clean"),
+            h("button", { className: "sheet-btn", onClick: props.onCancel }, "Cancel")));
       }
 
       // ============================================================
@@ -1569,6 +1850,9 @@
         var settings = props.settings, mode = props.mode;
         var name = settings.name;
         var profile = settings.profile;
+        var jc = props.justCompleted || { streakNew: settings.streakCurrent, streakDelta: 0, newBest: false };
+        var monthly = monthlyStats(settings.runHistory, Date.now());
+        var xpGained = props.stepCount * XP_PER_STEP + XP_PER_CLEAN;
 
         var headline, subline;
         if (profile === "playful") { headline = name ? ("Top form, " + name + " 💪") : "Top form 💪"; subline = "That's a wrap on " + mode.label + "."; }
@@ -1577,20 +1861,41 @@
         else if (profile === "guided") { headline = name ? ("Brilliant, " + name + ".") : "Brilliant."; subline = "You ran a full " + mode.label + " from start to finish."; }
         else { headline = name ? ("Nice work, " + name + ".") : "Done."; subline = "You ran " + mode.label + " from start to finish."; }
 
-        return h("div", { className: "screen done-screen fade-up" },
-          h("div", { className: "done-emoji" }, "✨"),
+        var streakLine = null;
+        if (jc.newBest && jc.streakNew >= 2) {
+          streakLine = "🎉 New best: " + jc.streakNew + "-day streak!";
+        } else if (jc.streakNew >= 2) {
+          streakLine = "🔥 Day " + jc.streakNew + " of your streak.";
+        } else if (jc.streakNew === 1 && jc.streakDelta > 0) {
+          streakLine = "🔥 Streak started — keep it rolling next week.";
+        }
+
+        return h("div", { className: "screen done-screen fade-up", style: { position: "relative" } },
+          h(Confetti, { count: 28, color: mode.color }),
+          h("div", { className: "done-emoji bounce-in" }, "✨"),
           h("h2", null, headline),
           h("p", null, subline, " Enjoy the place."),
+          streakLine ? h("div", { className: "streak-banner" }, streakLine) : null,
           h("div", { className: "done-stats" },
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, "+" + xpGained),
+              h("span", { className: "stat-label" }, "XP")),
             h("div", { className: "stat-chip" },
               h("span", { className: "stat-value", style: { color: mode.color } }, props.stepCount),
               h("span", { className: "stat-label" }, "steps")),
             h("div", { className: "stat-chip" },
               h("span", { className: "stat-value", style: { color: mode.color } }, props.minutesUsed),
-              h("span", { className: "stat-label" }, "minutes")),
+              h("span", { className: "stat-label" }, "minutes"))),
+          h("div", { className: "done-stats" },
             h("div", { className: "stat-chip" },
-              h("span", { className: "stat-value", style: { color: mode.color } }, settings.sqm),
-              h("span", { className: "stat-label" }, "m² done"))),
+              h("span", { className: "stat-value", style: { color: mode.color } }, monthly.runs),
+              h("span", { className: "stat-label" }, "this month")),
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, monthly.minutes),
+              h("span", { className: "stat-label" }, "min this month")),
+            h("div", { className: "stat-chip" },
+              h("span", { className: "stat-value", style: { color: mode.color } }, settings.totalXP || 0),
+              h("span", { className: "stat-label" }, "total XP"))),
           h("button", { className: "primary-btn", style: { background: mode.color }, onClick: props.onRestart }, "Pick another mode"));
       }
 
@@ -1606,6 +1911,9 @@
         var sl = useState(0);                 var secondsLeft = sl[0], setSecondsLeft = sl[1];
         var tr = useState(false);             var timerRunning = tr[0], setTimerRunning = tr[1];
         var ak = useState(0);                 var animKey = ak[0], setAnimKey = ak[1];
+        var hs = useState(false);             var hideTimerSession = hs[0], setHideTimerSession = hs[1];
+        var sh = useState(false);             var sheetOpen = sh[0], setSheetOpen = sh[1];
+        var jc = useState(null);              var justCompleted = jc[0], setJustCompleted = jc[1]; // { streakDelta, streakNew, newBest }
         var startedAt = useRef(0);
         var initialSeconds = useRef(0);
 
@@ -1633,12 +1941,18 @@
           setTimerRunning(false);
           setStepIndex(0);
           setAnimKey(function (k) { return k + 1; });
+          setHideTimerSession(false);
+          setSheetOpen(false);
+          setJustCompleted(null);
           setPhase("launch");
         }
         function backToPicker() {
           setPhase("picker");
           setMode(null);
           setTimerRunning(false);
+          setHideTimerSession(false);
+          setSheetOpen(false);
+          setJustCompleted(null);
         }
         function openSettings() { setPhase("settings"); }
         function saveSettings_(s) { persist(s); setPhase("picker"); }
@@ -1655,10 +1969,26 @@
           if (stepIndex + 1 >= visible.length) {
             setPhase("done");
             setTimerRunning(false);
-            // bump runCount
+            var now = Date.now();
+            var streak = updateStreakOnComplete(settings, now);
+            var minutesUsed = Math.max(0, Math.round((initialSeconds.current - secondsLeft) / 60));
+            var entry = { mode: mode.id, completedAt: now, minutes: minutesUsed, steps: visible.length };
+            var history = (settings.runHistory || []).slice(-99);
+            history.push(entry);
+            var newBest = streak.streakBest > (settings.streakBest || 0);
+            setJustCompleted({
+              streakNew: streak.streakCurrent,
+              streakDelta: streak.streakCurrent - (settings.streakCurrent || 0),
+              newBest: newBest
+            });
             persist(Object.assign({}, settings, {
               runCount: (settings.runCount || 0) + 1,
-              lastCompletedAt: Date.now()
+              lastCompletedAt: now,
+              totalXP: (settings.totalXP || 0) + visible.length * XP_PER_STEP + XP_PER_CLEAN,
+              streakCurrent: streak.streakCurrent,
+              streakBest: streak.streakBest,
+              streakLastAt: streak.streakLastAt,
+              runHistory: history
             }));
           } else {
             setStepIndex(stepIndex + 1);
@@ -1686,6 +2016,7 @@
             mode: mode, settings: settings,
             stepCount: visibleNow.length,
             minutesUsed: minutesUsed,
+            justCompleted: justCompleted,
             onRestart: backToPicker
           });
         }
@@ -1699,22 +2030,35 @@
             mode: mode, settings: settings,
             stepCount: visible.length,
             minutesUsed: Math.round((initialSeconds.current - secondsLeft) / 60),
+            justCompleted: justCompleted,
             onRestart: backToPicker
           });
         }
         var materialized = materialize(step, mode.id, settings);
-        return h(TaskCard, {
-          step: materialized,
-          stepIndex: stepIndex,
-          total: visible.length,
-          color: mode.color,
-          animKey: animKey,
-          settings: settings,
-          secondsLeft: secondsLeft,
-          timerRunning: timerRunning,
-          onToggleTimer: function () { setTimerRunning(function (v) { return !v; }); },
-          onNext: next
-        });
+        var showTimer = settings.showTimer !== false && !hideTimerSession;
+        return h(React.Fragment, null,
+          h(TaskCard, {
+            step: materialized,
+            stepIndex: stepIndex,
+            total: visible.length,
+            color: mode.color,
+            animKey: animKey,
+            settings: settings,
+            secondsLeft: secondsLeft,
+            timerRunning: timerRunning,
+            showTimer: showTimer,
+            onOpenTimerSheet: function () { setSheetOpen(true); },
+            onShowTimer: function () { setHideTimerSession(false); },
+            onNext: next
+          }),
+          sheetOpen ? h(TimerSheet, {
+            color: mode.color,
+            timerRunning: timerRunning,
+            onPauseResume: function () { setTimerRunning(function (v) { return !v; }); setSheetOpen(false); },
+            onHide: function () { setHideTimerSession(true); setTimerRunning(false); setSheetOpen(false); },
+            onCancel: function () { setSheetOpen(false); }
+          }) : null
+        );
       }
 
       var root = ReactDOM.createRoot(document.getElementById("root"));

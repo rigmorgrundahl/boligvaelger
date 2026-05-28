@@ -1,6 +1,14 @@
-// The Clean Machine v2 — unified UX + customization
-// Single React component. Mobile-first cleaning guide.
-// Reference artifact — index.html holds the runnable inline version.
+// The Clean Machine — Reference JSX
+//
+// SYNC STATE: this file reflects v3 (mode + profile rename). It does NOT
+// yet include v4 additions: streaks, pace toggle, Duolingo-style juice
+// (depth-shadow buttons, +XP floats, encouragement microcopy, milestone
+// confetti), PWA manifest + service worker, mid-clean timer sheet.
+//
+// `index.html` at the repo root is the canonical, runnable source of
+// truth. When porting this file into a Vite/Next project, prefer
+// re-syncing from index.html rather than building on top of this v3
+// snapshot.
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 

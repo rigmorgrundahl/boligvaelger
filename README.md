@@ -6,6 +6,17 @@ A mobile-first, single-screen cleaning guide for whoever in the household is abo
 
 Open `index.html` in any modern browser. No build step, no server required — React 18 loads from a CDN and the rest is inline.
 
+## Install it on your phone
+
+The app is a PWA (Progressive Web App). After you visit the deployed page on your phone:
+
+- **iOS Safari**: tap Share → "Add to Home Screen"
+- **Android Chrome / Edge**: tap the menu → "Install app" / "Add to Home Screen"
+
+It launches in standalone mode (no browser chrome) and works offline after one online visit.
+
+For App Store / Play Store distribution, the next step is a Capacitor wrapper (a separate, larger task that needs a Mac for iOS builds).
+
 ## Setup
 
 The first time you open the app, a quick wizard asks:
@@ -30,7 +41,7 @@ Every mode uses the same UX: a launch screen with a slide-to-start gesture, then
 | 💜 **The Deep Dive** | ~2 hrs | everything that matters, realistic but tight |
 | 🌹 **The Whole Shebang** | ~4 hrs | every corner, every detail |
 
-Time estimates and step counts scale to your setup: a 3-bedroom house with stairs and garden takes longer than a 1-bedroom flat. The Quickie has a 60-minute cap — bigger places see a "consider The Deep Dive" hint.
+Time estimates and step counts scale to your setup: a 3-bedroom house with stairs and garden takes longer than a 1-bedroom flat. The Quickie has a 60-minute cap.
 
 ## Profiles
 
@@ -42,10 +53,32 @@ Profiles describe the *style of guidance* you want from the app — not the user
 - **Playful** — Snappier copy and a lighter vibe.
 - **Pre-guests** — Quick refresh before company arrives. Hides The Whole Shebang.
 
+## Game-feel
+
+The app borrows a few cues from Duolingo to make consistent cleaning feel rewarding without being preachy:
+
+- **🔥 Streak** — tracked across runs; visible on the mode picker and every task card. 8-day grace window before it resets.
+- **+10 XP** floats up when you tap Done on a step; +50 bonus at the end. Cumulative XP visible in Settings → Stats.
+- **Mid-step encouragement** — "Halfway. Nice pace.", "Last one — finish strong.", etc.
+- **Milestone confetti** — small bursts at the halfway and finish points.
+- **Done screen** — stats (steps, minutes, XP, this-month totals) and a streak banner. Confetti rains briefly.
+- **Bouncy buttons** — depth-shadow that compresses on press.
+
+Skipped on purpose: hearts / lives / punishment for skipping. The app is meant to *lower* activation energy, not raise it.
+
+## Pace toggle
+
+The countdown can stress people out — especially the audience the app is for. There are two ways to turn it off:
+
+- **Permanent**: Settings → Pace → toggle "Show countdown timer".
+- **Just this clean**: tap the timer chip → "Hide for this clean". A small "show timer" link brings it back.
+
 ## Files
 
 - `index.html` — self-contained app (React from CDN, all CSS/JS inline). The runnable artifact.
-- `CleanMachine.jsx` — same component as JSX source reference. Drop into a Vite/Next project to use as a normal React component.
+- `manifest.webmanifest` — PWA manifest (name, icons, theme color).
+- `sw.js` — service worker (offline support, cache-first for shell assets).
+- `CleanMachine.jsx` — JSX reference. Currently reflects v3; v4 additions (streaks, PWA, pace toggle, juice) only live in `index.html`. Treat `index.html` as canonical.
 
 ## Design
 
@@ -56,8 +89,8 @@ Profiles describe the *style of guidance* you want from the app — not the user
 
 ## Roadmap
 
-- Capacitor wrapper to ship as a native iOS/Android app
-- Spotify DJ — `MODES[id].mood` field is already reserved (energetic / focused / long-mix); maps to a per-mode playlist when integrated
-- Streaks + completion stats (`runCount` and `lastCompletedAt` already persisted)
-- Optional resume-where-you-left-off mid-run
-- Optional "hide the timer" toggle for users who find the countdown stressful
+- **Capacitor wrapper** — package as a native iOS/Android binary for the stores. Separate session, needs Mac for iOS.
+- **Resume mid-clean** — persist current step so a phone interruption doesn't lose the run.
+- **Spotify DJ** — `MODES[id].mood` field is reserved (energetic / focused / long-mix); maps to a per-mode playlist when integrated.
+- **Achievements** — badges for first Deep Dive, 7-day streak, all profiles tried, etc.
+- **Setup wizard collapse** — currently 10 screens, probably can land at 6.
